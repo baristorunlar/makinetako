@@ -593,7 +593,7 @@
 
                 <div class="form-actions">
                     <button type="submit" class="btn-primary" style="flex:1;">Mesai Kaydını Sisteme İşle</button>
-                    <button type="button" class="btn-success" onclick="exportToExcelDetailed()">Excel Detaylı Rapor Al</button>
+                    <button type="button" class="btn-success" onclick="exportToExcelDetailed()">📊 Tasarımlı Excel Raporu Al</button>
                 </div>
             </form>
         </div>
@@ -680,7 +680,7 @@
 </div>
 
 <script>
-    // --- GÜNCELLENEN NÜMERİK ŞİFRE AYARI ---
+    // --- NÜMERİK ŞİFRE AYARI ---
     const PAGE_PASSWORD = "8426"; 
 
     function checkPassword() {
@@ -1300,90 +1300,243 @@
 
     function closeModal() { document.getElementById('managerModal').style.display = 'none'; }
 
-    /* --- GELİŞMİŞ VE DETAYLI EXCEL AKTARIM FONKSİYONU --- */
+    /* --- TASARIMLI VE ŞIK HTML-EXCEL ŞABLON AKTARIM FONKSİYONU --- */
     function exportToExcelDetailed() {
-        if (records.length === 0 && payments.length === 0) {
+        if (records.length === 0 && payments.length === 0 && savedCompanies.length === 0) {
             alert("Sistem Uyarısı: Dışa aktarılacak veri bulunmamaktadır.");
             return;
         }
 
-        const wb = XLSX.utils.book_new();
-        
-        // 1. CARİ HESAP ÖZETİ SAYFASI
+        const todayStr = new Date().toLocaleDateString('tr-TR');
+
+        // Cari İstatistiklerini Hesapla
         const compData = {};
-        let totalHakEdis = 0, totalTahsilat = 0;
+        let totalHakEdis = 0, totalTahsilat = 0, totalHours = 0;
         
         records.forEach(r => {
-            if (!compData[r.companyName]) compData[r.companyName] = { cost: 0, paid: 0 };
-            compData[r.companyName].cost += parseFloat(r.totalAmount);
-            totalHakEdis += parseFloat(r.totalAmount);
-        });
-        payments.forEach(p => {
-            if (!compData[p.companyName]) compData[p.companyName] = { cost: 0, paid: 0 };
-            compData[p.companyName].paid += parseFloat(p.amount);
-            totalTahsilat += parseFloat(p.amount);
+            if (!compData[r.companyName]) compData[r.companyName] = { hours: 0, cost: 0, paid: 0 };
+            compData[r.companyName].hours += parseFloat(r.durationHours || 0);
+            compData[r.companyName].cost += parseFloat(r.totalAmount || 0);
+            totalHakEdis += parseFloat(r.totalAmount || 0);
+            totalHours += parseFloat(r.durationHours || 0);
         });
 
-        const summaryRows = [];
+        payments.forEach(p => {
+            if (!compData[p.companyName]) compData[p.companyName] = { hours: 0, cost: 0, paid: 0 };
+            compData[p.companyName].paid += parseFloat(p.amount || 0);
+            totalTahsilat += parseFloat(p.amount || 0);
+        });
+
+        savedCompanies.forEach(c => {
+            if (!compData[c]) compData[c] = { hours: 0, cost: 0, paid: 0 };
+        });
+
+        // TASARIMLI HTML TABLO OLUŞTURMA
+        let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="utf-8">
+            <!--[if gte mso 9]>
+            <xml>
+                <x:ExcelWorkbook>
+                    <x:ExcelWorksheets>
+                        <x:ExcelWorksheet>
+                            <x:Name>Rapor ve Detaylar</x:Name>
+                            <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+                        </x:ExcelWorksheet>
+                    </x:ExcelWorksheets>
+                </x:ExcelWorkbook>
+            </xml>
+            <![endif]-->
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 13px; color: #0f172a; }
+                .main-title { background-color: #1e3a8a; color: #ffffff; font-size: 18px; font-weight: bold; padding: 14px; text-align: center; }
+                .section-header { background-color: #334155; color: #ffffff; font-size: 14px; font-weight: bold; padding: 8px 12px; margin-top: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th { background-color: #1e3a8a; color: #ffffff; font-weight: bold; padding: 10px; border: 1px solid #cbd5e1; text-align: left; }
+                td { padding: 8px 10px; border: 1px solid #cbd5e1; }
+                tr:nth-child(even) { background-color: #f8fafc; }
+                .total-row td { background-color: #e2e8f0; font-weight: bold; font-size: 13px; border-top: 2px solid #1e3a8a; }
+                .val-debt { color: #991b1b; font-weight: bold; }
+                .val-credit { color: #166534; font-weight: bold; }
+                .sub-info { font-size: 11px; color: #64748b; padding: 5px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="main-title">BARIŞ TORUNLAR PROJESİDİR - MAKİNE TAKİP VE CARİ HESAP DETAYLI RAPORU</div>
+            <div class="sub-info">Rapor Oluşturma Tarihi: ${todayStr} | Sistem Veri Tabanı Kaydı</div>
+
+            <!-- TABLO 1: CARİ HESAP ÖZETİ -->
+            <div class="section-header">📊 CARİ HESAP BAKIYE VE GENEL DURUM ÖZETİ</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Firma / Müşteri Ünvanı</th>
+                        <th>Toplam Çalışma (Saat)</th>
+                        <th>Toplam Hak Ediş (TL)</th>
+                        <th>Toplam Tahsilat (TL)</th>
+                        <th>Kalan Bakiye (TL)</th>
+                        <th>Güncel Cari Durum</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
         for (const [comp, data] of Object.entries(compData)) {
             const bakiye = data.cost - data.paid;
-            let durum = bakiye > 0 ? "Borçlu" : (bakiye < 0 ? "Alacaklı" : "Hesap Sıfır");
-            
-            summaryRows.push({
-                "Firma Ünvanı": comp,
-                "Toplam Hak Ediş (TL)": data.cost,
-                "Toplam Tahsilat (TL)": data.paid,
-                "Kalan Bakiye (TL)": bakiye,
-                "Güncel Cari Durum": durum
-            });
+            let durumClass = bakiye > 0 ? "val-debt" : (bakiye < 0 ? "val-credit" : "");
+            let durumText = bakiye > 0 ? "Borç Bakiye" : (bakiye < 0 ? "Alacak Bakiye" : "Hesap Sıfır");
+
+            html += `<tr>
+                <td><strong>${comp}</strong></td>
+                <td>${data.hours.toFixed(2)} Saat</td>
+                <td>${data.cost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td class="val-credit">${data.paid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td class="${durumClass}">${bakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td class="${durumClass}">${durumText}</td>
+            </tr>`;
         }
-        
-        summaryRows.push({
-            "Firma Ünvanı": "GENEL TOPLAM",
-            "Toplam Hak Ediş (TL)": totalHakEdis,
-            "Toplam Tahsilat (TL)": totalTahsilat,
-            "Kalan Bakiye (TL)": totalHakEdis - totalTahsilat,
-            "Güncel Cari Durum": "-"
+
+        const genBakiye = totalHakEdis - totalTahsilat;
+        html += `<tr class="total-row">
+            <td>GENEL TOPLAM / SİSTEM GENEL BAKİYESİ</td>
+            <td>${totalHours.toFixed(2)} Saat</td>
+            <td>${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td class="val-credit">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td class="${genBakiye > 0 ? 'val-debt' : 'val-credit'}">${genBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td>${genBakiye > 0 ? 'Sistem Borçlu' : 'Sistem Alacaklı'}</td>
+        </tr>
+        </tbody>
+        </table>
+
+        <!-- TABLO 2: MESAİ HAREKETLERİ -->
+        <div class="section-header">🚜 DETAYLI MESAİ VE ÇALIŞMA HAREKETLERİ</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Sıra No</th>
+                    <th>Firma Ünvanı</th>
+                    <th>Makine / Plaka</th>
+                    <th>Operatör</th>
+                    <th>Saatlik Ücret (TL)</th>
+                    <th>Başlangıç Tarihi</th>
+                    <th>Bitiş Tarihi</th>
+                    <th>Süre (Saat)</th>
+                    <th>Hak Ediş Tutarı (TL)</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        let workSumHours = 0, workSumCost = 0;
+        records.forEach((r, idx) => {
+            const h = parseFloat(r.durationHours || 0);
+            const c = parseFloat(r.totalAmount || 0);
+            workSumHours += h;
+            workSumCost += c;
+
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td><strong>${r.companyName}</strong></td>
+                <td>${r.machineName}</td>
+                <td>${r.operator}</td>
+                <td>${r.hourlyRate} ₺</td>
+                <td>${r.formattedStart}</td>
+                <td>${r.formattedEnd}</td>
+                <td>${h.toFixed(2)} Saat</td>
+                <td><strong>${c.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong></td>
+            </tr>`;
         });
 
-        const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-        wsSummary['!cols'] = [{wch: 35}, {wch: 25}, {wch: 25}, {wch: 25}, {wch: 20}];
-        XLSX.utils.book_append_sheet(wb, wsSummary, "1 - Cari Hesap Özeti");
-
-        // 2. DETAYLI ÇALIŞMA KAYITLARI SAYFASI
-        if (records.length > 0) {
-            const workRows = records.map((r, index) => ({
-                "İşlem No": index + 1,
-                "Firma Ünvanı": r.companyName,
-                "Makine / Plaka": r.machineName,
-                "Operatör": r.operator,
-                "Saatlik Ücret (TL)": parseFloat(r.hourlyRate),
-                "Mesai Başlangıç Tarihi": r.formattedStart,
-                "Mesai Bitiş Tarihi": r.formattedEnd,
-                "Toplam Çalışma (Saat)": parseFloat(r.durationHours),
-                "Kesinleşen Hak Ediş (TL)": parseFloat(r.totalAmount)
-            }));
-            const wsWork = XLSX.utils.json_to_sheet(workRows);
-            wsWork['!cols'] = [{wch: 10}, {wch: 35}, {wch: 25}, {wch: 25}, {wch: 20}, {wch: 25}, {wch: 25}, {wch: 25}, {wch: 25}];
-            XLSX.utils.book_append_sheet(wb, wsWork, "2 - Çalışma Hareketleri");
+        if(records.length === 0) {
+            html += `<tr><td colspan="9" style="text-align:center;">Sistemde kayıtlı mesai verisi bulunmamaktadır.</td></tr>`;
+        } else {
+            html += `<tr class="total-row">
+                <td colspan="7">TOPLAM MESAİ HAREKETLERİ</td>
+                <td>${workSumHours.toFixed(2)} Saat</td>
+                <td>${workSumCost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            </tr>`;
         }
 
-        // 3. DETAYLI TAHSİLAT KAYITLARI SAYFASI
-        if (payments.length > 0) {
-            const payRows = payments.map((p, index) => ({
-                "İşlem No": index + 1,
-                "Firma Ünvanı": p.companyName,
-                "Tahsilat Tarihi": p.date,
-                "Alınan Tutar (TL)": parseFloat(p.amount),
-                "Açıklama / Belge / Not": p.note
-            }));
-            const wsPay = XLSX.utils.json_to_sheet(payRows);
-            wsPay['!cols'] = [{wch: 10}, {wch: 35}, {wch: 20}, {wch: 20}, {wch: 40}];
-            XLSX.utils.book_append_sheet(wb, wsPay, "3 - Tahsilat Hareketleri");
+        html += `</tbody>
+        </table>
+
+        <!-- TABLO 3: TAHSİLAT HAREKETLERİ -->
+        <div class="section-header">💳 DETAYLI TAHSİLAT VE ÖDEME HAREKETLERİ</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Sıra No</th>
+                    <th>Firma Ünvanı</th>
+                    <th>Tahsilat Tarihi</th>
+                    <th>Alınan Tutar (TL)</th>
+                    <th>Açıklama / Dekont / Not</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        let paySum = 0;
+        payments.forEach((p, idx) => {
+            const amt = parseFloat(p.amount || 0);
+            paySum += amt;
+
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td><strong>${p.companyName}</strong></td>
+                <td>${p.date}</td>
+                <td class="val-credit"><strong>+${amt.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong></td>
+                <td>${p.note}</td>
+            </tr>`;
+        });
+
+        if(payments.length === 0) {
+            html += `<tr><td colspan="5" style="text-align:center;">Sistemde kayıtlı tahsilat verisi bulunmamaktadır.</td></tr>`;
+        } else {
+            html += `<tr class="total-row">
+                <td colspan="3">TOPLAM TAHSİLAT HAREKETLERİ</td>
+                <td class="val-credit">+${paySum.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td>-</td>
+            </tr>`;
         }
 
-        const today = new Date().toLocaleDateString('tr-TR').replace(/\./g, '-');
-        XLSX.writeFile(wb, `Sistem_Detayli_Rapor_${today}.xlsx`);
+        html += `</tbody>
+        </table>
+
+        <!-- TABLO 4: TANIMLI REHBER LİSTESİ -->
+        <div class="section-header">🗂️ SİSTEMDE KAYITLI FİRMA, MAKİNE VE OPERATÖR TANIMLARI</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Kayıtlı Firma / Müşteri Ünvanları</th>
+                    <th>Kayıtlı İş Makineleri & Plakalar</th>
+                    <th>Kayıtlı Operatör / Personel İsimleri</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        const maxL = Math.max(savedCompanies.length, savedMachines.length, savedOperators.length);
+        for(let i = 0; i < maxL; i++) {
+            html += `<tr>
+                <td>${savedCompanies[i] || '-'}</td>
+                <td>${savedMachines[i] || '-'}</td>
+                <td>${savedOperators[i] || '-'}</td>
+            </tr>`;
+        }
+
+        html += `</tbody>
+        </table>
+
+        </body>
+        </html>`;
+
+        // İNDİRME BLOB İŞLEMİ
+        const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        const fileDate = todayStr.replace(/\./g, '-');
+        
+        link.href = url;
+        link.download = `MakineTakip_Tasarımlı_Rapor_${fileDate}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 </script>
 
