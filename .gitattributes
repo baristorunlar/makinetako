@@ -1,0 +1,10 @@
+# Git satır sonu (line ending) otomatik düzenleme kuralları
+* text=auto
+
+# Web ve kaynak kod dosyaları için varsayılan LF kullanımı
+*.html text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.sql text eol=lf
+*.md text eol=lf
+*.json text eol=lf

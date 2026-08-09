@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>İş Makinesi Takip ve Cari Hesap Sistemi (Tam Bulut Senkronize)</title>
+    <title>İş Makinesi Takip ve Cari Hesap Sistemi</title>
     <!-- Excel İndirme Kütüphanesi -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    
-    <!-- Firebase Compat Kütüphaneleri -->
-    <script src="./firebase-config.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
+    <!-- Supabase JS Client Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* --- KURUMSAL & SADE TASARIM (RESMİ) --- */
         :root {
@@ -22,9 +18,6 @@
             --success-hover: #14532d;
             --danger: #991b1b; /* Koyu Kırmızı */
             --danger-hover: #7f1d1d;
-            --warning-bg: #fef3c7;
-            --warning-border: #f59e0b;
-            --warning-text: #92400e;
             --bg-body: #f1f5f9; /* Çok açık gri arka plan */
             --bg-card: #ffffff;
             --text-main: #0f172a;
@@ -44,31 +37,7 @@
             color: var(--text-main);
             padding: 20px;
             font-size: 14px;
-        }
-
-        /* --- BİLDİRİM / STATUS BANNER --- */
-        .status-banner {
-            background-color: var(--warning-bg);
-            border: 1px solid var(--warning-border);
-            color: var(--warning-text);
-            padding: 12px 18px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .status-banner.connected {
-            background-color: #dcfce7;
-            border-color: #22c55e;
-            color: #14532d;
-        }
-        .status-badge {
-            font-weight: bold;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background: rgba(0,0,0,0.08);
+            min-height: 100vh;
         }
 
         /* --- GİRİŞ EKRANI --- */
@@ -80,6 +49,7 @@
             justify-content: center;
             align-items: center;
             z-index: 9999;
+            padding: 15px;
         }
         .login-box {
             background: var(--bg-card);
@@ -88,6 +58,7 @@
             padding: 30px;
             border: 1px solid var(--border-color);
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 4px;
         }
         .login-box h2 {
             font-size: 1.25rem;
@@ -115,7 +86,9 @@
             color: white;
             padding: 15px 20px;
             margin-bottom: 15px;
-            border-radius: 2px;
+            border-radius: 4px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .header-bar h1 {
             font-size: 1.2rem;
@@ -123,6 +96,44 @@
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* VERİ TABANI ROZETİ (STATUS BADGE) */
+        .db-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .db-badge {
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .db-badge.db-connected {
+            background: #dcfce7;
+            color: #14532d;
+            border: 1px solid #86efac;
+        }
+        .db-badge.db-local {
+            background: #fef9c3;
+            color: #713f12;
+            border: 1px solid #fde047;
         }
 
         /* --- SEKMELER (TABS) --- */
@@ -136,12 +147,13 @@
             background: #e2e8f0;
             border: 1px solid var(--border-color);
             border-bottom: none;
-            padding: 10px 20px;
+            padding: 12px 20px;
             cursor: pointer;
             font-weight: 600;
             color: var(--text-muted);
             border-radius: 4px 4px 0 0;
             font-size: 0.95rem;
+            transition: all 0.2s ease;
         }
         .tab-btn:hover {
             background: #cbd5e1;
@@ -158,6 +170,7 @@
             border: 1px solid var(--border-color);
             padding: 20px;
             margin-bottom: 20px;
+            border-radius: 4px;
         }
         .panel-title {
             font-size: 1.05rem;
@@ -175,10 +188,14 @@
             gap: 15px;
             margin-bottom: 15px;
         }
+        .company-select-group {
+            grid-column: 1 / -1;
+            max-width: 50%;
+        }
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
         }
         .form-group label {
             font-weight: 600;
@@ -188,11 +205,13 @@
 
         input, select {
             border: 1px solid var(--border-color);
-            padding: 8px 10px;
-            font-size: 0.95rem;
+            padding: 10px 12px;
+            font-size: 16px;
             color: var(--text-main);
             background-color: #fff;
-            border-radius: 2px;
+            border-radius: 4px;
+            min-height: 42px;
+            width: 100%;
         }
         input:focus, select:focus {
             outline: none;
@@ -203,12 +222,19 @@
         /* --- BUTONLAR --- */
         button {
             border: none;
-            padding: 8px 16px;
+            padding: 10px 16px;
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-            border-radius: 2px;
+            border-radius: 4px;
             text-align: center;
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.15s ease-in-out;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: var(--primary-hover); }
@@ -227,9 +253,16 @@
 
         .input-with-btn {
             display: flex;
-            gap: 5px;
+            gap: 6px;
+            align-items: center;
         }
         .input-with-btn select { flex: 1; }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
 
         /* CANLI HESAPLAMA KUTUSU */
         .live-calc-box {
@@ -240,10 +273,12 @@
             display: flex;
             justify-content: space-between;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: var(--primary);
             border-left: 4px solid var(--primary);
-            margin-top: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         /* --- TABLO --- */
@@ -252,6 +287,8 @@
             overflow-x: auto;
             border: 1px solid var(--border-color);
             background: var(--bg-card);
+            border-radius: 4px;
+            -webkit-overflow-scrolling: touch;
         }
         table {
             width: 100%;
@@ -259,9 +296,10 @@
             text-align: left;
         }
         th, td {
-            padding: 10px 12px;
+            padding: 12px;
             border-bottom: 1px solid var(--border-color);
             border-right: 1px solid var(--border-color);
+            white-space: nowrap;
         }
         th:last-child, td:last-child {
             border-right: none;
@@ -277,20 +315,24 @@
         
         .action-btns {
             display: flex;
-            gap: 5px;
+            gap: 6px;
         }
-        .action-btns button { padding: 4px 10px; font-size: 0.8rem; }
+        .action-btns button { 
+            padding: 6px 12px; 
+            font-size: 0.8rem; 
+            min-height: 34px;
+        }
 
         /* --- ÖZET BİLGİLERİ --- */
         .stat-bar {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             background: #f8fafc;
             border: 1px solid var(--border-color);
             padding: 15px;
-            gap: 20px;
-            justify-content: space-between;
+            gap: 15px;
             margin-bottom: 20px;
+            border-radius: 4px;
         }
         .stat-item {
             display: flex;
@@ -303,7 +345,7 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 15px;
         }
         .company-card {
@@ -311,6 +353,7 @@
             border: 1px solid var(--border-color);
             border-top: 3px solid var(--primary);
             padding: 15px;
+            border-radius: 4px;
         }
         .company-card h4 {
             font-size: 1rem;
@@ -337,16 +380,19 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            padding: 15px;
         }
         .modal-card {
             background: var(--bg-card);
             width: 100%;
-            max-width: 650px;
+            max-width: 600px;
             border: 1px solid var(--border-color);
             box-shadow: 0 10px 15px rgba(0,0,0,0.2);
             max-height: 90vh;
             display: flex;
             flex-direction: column;
+            border-radius: 6px;
+            overflow: hidden;
         }
         .modal-header {
             background: var(--primary);
@@ -361,22 +407,100 @@
             background: transparent;
             color: white;
             border: none;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             cursor: pointer;
-            padding: 0;
+            padding: 0 5px;
+            min-height: 36px;
+            min-width: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .modal-body {
             padding: 20px;
             overflow-y: auto;
         }
-        .manage-list { list-style: none; border: 1px solid var(--border-color); }
+        .manage-list { list-style: none; border: 1px solid var(--border-color); border-radius: 4px; }
         .manage-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
         .manage-list li:last-child { border-bottom: none; }
 
+        /* --- MOBİL İÇİN ÖZEL RESPONSIVE UYARLAMALARI --- */
         @media (max-width: 768px) {
-            .header-bar { flex-direction: column; gap: 10px; text-align: center; }
-            .stat-bar { flex-direction: column; gap: 10px; }
-            .live-calc-box { flex-direction: column; gap: 8px; text-align: center; }
+            body {
+                padding: 10px;
+            }
+            .header-bar { 
+                flex-direction: column; 
+                gap: 12px; 
+                text-align: center;
+                padding: 15px;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: center;
+            }
+            .header-bar h1 {
+                font-size: 1.05rem;
+            }
+            .header-bar button {
+                width: 100%;
+            }
+            .company-select-group {
+                max-width: 100%;
+            }
+            .stat-bar { 
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px; 
+            }
+            .live-calc-box { 
+                flex-direction: column; 
+                gap: 8px; 
+                text-align: left; 
+            }
+            .form-actions {
+                flex-direction: column;
+            }
+            .form-actions button {
+                width: 100%;
+            }
+            .tab-btn {
+                padding: 10px 14px;
+                font-size: 0.88rem;
+                flex: 1;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stat-bar { 
+                grid-template-columns: 1fr;
+            }
+            .tab-container {
+                flex-direction: column;
+                border-bottom: none;
+                gap: 6px;
+            }
+            .tab-btn {
+                border-radius: 4px;
+                border-bottom: 1px solid var(--border-color);
+                width: 100%;
+            }
+            .input-with-btn {
+                flex-wrap: wrap;
+            }
+            .input-with-btn select {
+                width: 100%;
+                flex: 1 1 100%;
+            }
+            .input-with-btn button {
+                flex: 1;
+            }
+            .panel {
+                padding: 15px;
+            }
+            .login-box {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -388,10 +512,10 @@
         <h2>Sistem Girişi</h2>
         <p>Devam etmek için yetkili şifresini giriniz.</p>
         <div class="form-group" style="margin-bottom: 15px;">
-            <input type="password" id="passwordInput" placeholder="Şifreniz" onkeypress="handleEnterKey(event)" style="text-align:center; padding:10px;">
+            <input type="password" id="passwordInput" placeholder="Şifreniz" onkeypress="handleEnter(event)" style="text-align:center; padding:10px;">
         </div>
-        <div id="errorText" style="color: var(--danger); font-size: 0.85rem; margin-bottom: 15px; display: none; font-weight:bold;">Hatalı şifre girdiniz.</div>
-        <button class="btn-primary" onclick="checkPassword()" style="width: 100%; padding:10px;">Oturum Aç</button>
+        <div id="errorText" style="color: var(--danger); font-size: 0.85rem; margin-bottom: 15px; display: none; font-weight:bold; text-align:center;">Hatalı şifre girdiniz.</div>
+        <button class="btn-primary" onclick="checkPassword()" style="width: 100%;">Oturum Aç</button>
     </div>
 </div>
 
@@ -401,28 +525,29 @@
         
         <div class="header-bar">
             <h1>İş Makinesi Takip & Cari Hesap Sistemi</h1>
-            <button class="btn-danger" onclick="logout()">Güvenli Çıkış</button>
+            <div class="header-right">
+                <button class="btn-outline" style="color:white; border-color:rgba(255,255,255,0.5);" onclick="openDbSettings()">🔌 Veri Tabanı Ayarları</button>
+                <button class="btn-danger" onclick="logout()">Güvenli Çıkış</button>
+            </div>
         </div>
 
-        <!-- BULUT VERİTABANI BAĞLANTI DURUMU BANNERI -->
-        <div id="dbStatusBanner" class="status-banner">
-            <div>
-                <strong>Veritabanı Durumu:</strong> <span id="dbStatusText">Google Firebase Bağlantısı Kuruluyor...</span>
-            </div>
-            <span id="dbStatusBadge" class="status-badge">...</span>
+        <div class="db-bar">
+            <span id="dbStatusBadge" class="db-badge db-local">🟡 Yerel Depolama (LocalStorage) Modunda</span>
+            <button class="btn-outline" style="padding: 4px 12px; font-size:0.8rem; min-height:30px;" onclick="openDbSettings()">Supabase Yapılandır</button>
         </div>
         
         <div class="tab-container">
-            <button class="tab-btn active" id="tabWorkBtn" onclick="switchTab('workTab')">Çalışma Kaydı Ekle</button>
-            <button class="tab-btn" id="tabPaymentBtn" onclick="switchTab('paymentTab')">Tahsilat / Ödeme İşle</button>
+            <button class="tab-btn active" onclick="switchTab('workTab')">Çalışma Kaydı Ekle</button>
+            <button class="tab-btn" onclick="switchTab('paymentTab')">Tahsilat / Ödeme İşle</button>
         </div>
 
         <!-- ÇALIŞMA FORMU -->
         <div id="workTab" class="panel">
             <div class="panel-title">Yeni Çalışma Verisi Girişi</div>
-            <form id="trackingForm" onsubmit="handleWorkSubmit(event)">
+            <form id="trackingForm">
                 <div class="form-grid">
-                    <div class="form-group" style="grid-column: 1 / -1; max-width: 50%;">
+                    <!-- FİRMA SEÇİMİ -->
+                    <div class="form-group company-select-group">
                         <label>Firma / Müşteri Ünvanı</label>
                         <div class="input-with-btn">
                             <select id="companyName" required></select>
@@ -449,30 +574,32 @@
                     </div>
                 </div>
 
+                <!-- SAAT VE ÜCRET ALANI -->
                 <div style="border: 1px solid var(--border-color); padding: 15px; background: #f8fafc; border-radius: 4px; margin-bottom: 15px;">
                     <div class="form-grid" style="margin-bottom: 0;">
                         <div class="form-group">
                             <label>Birim Saat Ücreti (TL)</label>
-                            <input type="number" id="hourlyRate" step="0.01" min="0" oninput="calculateLive()" required>
+                            <input type="number" id="hourlyRate" step="0.01" min="0" required>
                         </div>
                         <div class="form-group">
                             <label>Mesai Başlangıç Tarih/Saat</label>
-                            <input type="datetime-local" id="startTime" oninput="calculateLive()" required>
+                            <input type="datetime-local" id="startTime" required>
                         </div>
                         <div class="form-group">
                             <label>Mesai Bitiş Tarih/Saat</label>
-                            <input type="datetime-local" id="endTime" oninput="calculateLive()" required>
+                            <input type="datetime-local" id="endTime" required>
                         </div>
                     </div>
+                    <!-- CANLI HESAPLAMA -->
                     <div class="live-calc-box">
                         <span>⏱️ Hesaplanan Süre: <span id="liveHours">0.00</span> Saat</span>
                         <span>💰 Tahmini Hak Ediş: <span id="liveTotal">0.00</span> TL</span>
                     </div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-top:10px;">
+                <div class="form-actions">
                     <button type="submit" class="btn-primary" style="flex:1;">Mesai Kaydını Sisteme İşle</button>
-                    <button type="button" class="btn-success" onclick="exportToExcelDetailed()">Tüm Verileri Excel'e Aktar (Tam Döküm)</button>
+                    <button type="button" class="btn-success" onclick="exportToExcelDetailed()">Excel Detaylı Rapor Al</button>
                 </div>
             </form>
         </div>
@@ -480,7 +607,7 @@
         <!-- ÖDEME FORMU -->
         <div id="paymentTab" class="panel" style="display: none;">
             <div class="panel-title">Tahsilat Verisi Girişi</div>
-            <form id="paymentForm" onsubmit="handlePaymentSubmit(event)">
+            <form id="paymentForm">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Firma / Müşteri Ünvanı</label>
@@ -552,22 +679,269 @@
     <div class="modal-card">
         <div class="modal-header">
             <h3 id="modalTitle">İşlem Menüsü</h3>
-            <button class="btn-close" onclick="closeModal()">X</button>
+            <button class="btn-close" onclick="closeModal()">✕</button>
         </div>
         <div class="modal-body" id="modalContent"></div>
     </div>
 </div>
 
-<!-- JAVASCRIPT MANTIĞI -->
 <script>
-    const PAGE_PASSWORD = "123";
+    // --- ŞİFRE AYARI ---
+    const PAGE_PASSWORD = "123"; 
 
+    function checkPassword() {
+        const inputVal = document.getElementById('passwordInput').value;
+        if (inputVal === PAGE_PASSWORD) {
+            sessionStorage.setItem('isLogged', 'true');
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+            document.getElementById('errorText').style.display = 'none';
+        } else {
+            document.getElementById('errorText').style.display = 'block';
+            document.getElementById('passwordInput').value = '';
+        }
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') checkPassword();
+    }
+
+    function logout() {
+        sessionStorage.removeItem('isLogged');
+        location.reload(); 
+    }
+
+    // --- SUPABASE VE VERİ KATMANI SOYUTLAMA (DATA SERVICE) ---
     const defaultCompanies = ["ABC İnşaat A.Ş.", "Örnek Hafriyat"];
     const defaultMachines = ["MAVİ MANİTU", "Ekskavatör", "Loder", "JCB"];
     const defaultOperators = ["MUSTAFA ÖZYILMAZ", "Ahmet Yılmaz", "Mehmet Demir"];
 
-    let isFirebaseActive = false;
-    let db = null;
+    let supabaseClient = null;
+
+    function initSupabase() {
+        const url = localStorage.getItem('supabase_url') || '';
+        const key = localStorage.getItem('supabase_key') || '';
+
+        if (url && key && window.supabase) {
+            try {
+                supabaseClient = window.supabase.createClient(url, key);
+                updateDbStatus(true);
+            } catch (e) {
+                console.error('Supabase Baglanti Hatasi:', e);
+                supabaseClient = null;
+                updateDbStatus(false);
+            }
+        } else {
+            supabaseClient = null;
+            updateDbStatus(false);
+        }
+    }
+
+    function updateDbStatus(isConnected) {
+        const statusEl = document.getElementById('dbStatusBadge');
+        if (statusEl) {
+            if (isConnected) {
+                statusEl.innerHTML = '🟢 Supabase Bulut Veri Tabanı Aktif';
+                statusEl.className = 'db-badge db-connected';
+            } else {
+                statusEl.innerHTML = '🟡 Yerel Depolama (LocalStorage) Modunda';
+                statusEl.className = 'db-badge db-local';
+            }
+        }
+    }
+
+    const DataService = {
+        async getCompanies() {
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('companies').select('name').order('id', { ascending: true });
+                    if (!error && data && data.length > 0) return data.map(d => d.name);
+                } catch (err) { console.error(err); }
+            }
+            return JSON.parse(localStorage.getItem('companiesList')) || defaultCompanies;
+        },
+        async saveCompanies(list) {
+            localStorage.setItem('companiesList', JSON.stringify(list));
+            if (supabaseClient) {
+                try {
+                    for (const name of list) {
+                        await supabaseClient.from('companies').upsert({ name }, { onConflict: 'name' });
+                    }
+                } catch (err) { console.error(err); }
+            }
+        },
+        async getMachines() {
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('machines').select('name').order('id', { ascending: true });
+                    if (!error && data && data.length > 0) return data.map(d => d.name);
+                } catch (err) { console.error(err); }
+            }
+            return JSON.parse(localStorage.getItem('machinesList')) || defaultMachines;
+        },
+        async saveMachines(list) {
+            localStorage.setItem('machinesList', JSON.stringify(list));
+            if (supabaseClient) {
+                try {
+                    for (const name of list) {
+                        await supabaseClient.from('machines').upsert({ name }, { onConflict: 'name' });
+                    }
+                } catch (err) { console.error(err); }
+            }
+        },
+        async getOperators() {
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('operators').select('name').order('id', { ascending: true });
+                    if (!error && data && data.length > 0) return data.map(d => d.name);
+                } catch (err) { console.error(err); }
+            }
+            return JSON.parse(localStorage.getItem('operatorsList')) || defaultOperators;
+        },
+        async saveOperators(list) {
+            localStorage.setItem('operatorsList', JSON.stringify(list));
+            if (supabaseClient) {
+                try {
+                    for (const name of list) {
+                        await supabaseClient.from('operators').upsert({ name }, { onConflict: 'name' });
+                    }
+                } catch (err) { console.error(err); }
+            }
+        },
+        async getRecords() {
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('work_records').select('*').order('created_at', { ascending: true });
+                    if (!error && data) {
+                        return data.map(r => ({
+                            id: Number(r.id),
+                            companyName: r.company_name,
+                            machineName: r.machine_name,
+                            operator: r.operator,
+                            hourlyRate: Number(r.hourly_rate),
+                            startTimeIso: r.start_time_iso,
+                            endTimeIso: r.end_time_iso,
+                            formattedStart: r.formatted_start,
+                            formattedEnd: r.formatted_end,
+                            durationHours: String(r.duration_hours),
+                            totalAmount: String(r.total_amount)
+                        }));
+                    }
+                } catch (err) { console.error(err); }
+            }
+            return JSON.parse(localStorage.getItem('machineRecords')) || [];
+        },
+        async addRecord(record) {
+            let localRecords = JSON.parse(localStorage.getItem('machineRecords')) || [];
+            localRecords.push(record);
+            localStorage.setItem('machineRecords', JSON.stringify(localRecords));
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('work_records').insert([{
+                        id: record.id,
+                        company_name: record.companyName,
+                        machine_name: record.machineName,
+                        operator: record.operator,
+                        hourly_rate: record.hourlyRate,
+                        start_time_iso: record.startTimeIso,
+                        end_time_iso: record.endTimeIso,
+                        formatted_start: record.formattedStart,
+                        formatted_end: record.formattedEnd,
+                        duration_hours: record.durationHours,
+                        total_amount: record.totalAmount
+                    }]);
+                } catch (err) { console.error(err); }
+            }
+        },
+        async updateRecord(record) {
+            let localRecords = JSON.parse(localStorage.getItem('machineRecords')) || [];
+            const idx = localRecords.findIndex(r => r.id === record.id);
+            if (idx !== -1) localRecords[idx] = record;
+            localStorage.setItem('machineRecords', JSON.stringify(localRecords));
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('work_records').update({
+                        company_name: record.companyName,
+                        machine_name: record.machineName,
+                        operator: record.operator,
+                        hourly_rate: record.hourlyRate,
+                        start_time_iso: record.startTimeIso,
+                        end_time_iso: record.endTimeIso,
+                        formatted_start: record.formattedStart,
+                        formatted_end: record.formattedEnd,
+                        duration_hours: record.durationHours,
+                        total_amount: record.totalAmount
+                    }).eq('id', record.id);
+                } catch (err) { console.error(err); }
+            }
+        },
+        async deleteRecord(id) {
+            let localRecords = JSON.parse(localStorage.getItem('machineRecords')) || [];
+            localRecords = localRecords.filter(r => r.id !== id);
+            localStorage.setItem('machineRecords', JSON.stringify(localRecords));
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('work_records').delete().eq('id', id);
+                } catch (err) { console.error(err); }
+            }
+        },
+        async getPayments() {
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('payments').select('*').order('created_at', { ascending: true });
+                    if (!error && data) {
+                        return data.map(p => ({
+                            id: Number(p.id),
+                            companyName: p.company_name,
+                            amount: String(p.amount),
+                            date: p.payment_date,
+                            note: p.note
+                        }));
+                    }
+                } catch (err) { console.error(err); }
+            }
+            return JSON.parse(localStorage.getItem('companyPayments')) || [];
+        },
+        async addPayment(payment) {
+            let localPayments = JSON.parse(localStorage.getItem('companyPayments')) || [];
+            localPayments.push(payment);
+            localStorage.setItem('companyPayments', JSON.stringify(localPayments));
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('payments').insert([{
+                        id: payment.id,
+                        company_name: payment.companyName,
+                        amount: payment.amount,
+                        payment_date: payment.date,
+                        note: payment.note
+                    }]);
+                } catch (err) { console.error(err); }
+            }
+        },
+        async deletePayment(id) {
+            let localPayments = JSON.parse(localStorage.getItem('companyPayments')) || [];
+            localPayments = localPayments.filter(p => p.id !== id);
+            localStorage.setItem('companyPayments', JSON.stringify(localPayments));
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('payments').delete().eq('id', id);
+                } catch (err) { console.error(err); }
+            }
+        },
+        async deleteOptionFromList(type, itemToDelete) {
+            if (supabaseClient) {
+                try {
+                    let table = type === 'machine' ? 'machines' : (type === 'operator' ? 'operators' : 'companies');
+                    await supabaseClient.from(table).delete().eq('name', itemToDelete);
+                } catch (err) { console.error(err); }
+            }
+        }
+    };
 
     let savedCompanies = [];
     let savedMachines = [];
@@ -576,279 +950,136 @@
     let payments = [];
     let currentManageType = null;
 
-    document.addEventListener('DOMContentLoaded', () => {
-        checkAuthStatus();
-        document.getElementById('paymentDate').valueAsDate = new Date();
-        initDatabase();
-    });
-
-    function checkPassword() {
-        const inputVal = document.getElementById('passwordInput').value;
-        if (inputVal === PAGE_PASSWORD) {
-            sessionStorage.setItem('isLogged', 'true');
-            checkAuthStatus();
-        } else {
-            document.getElementById('errorText').style.display = 'block';
-            document.getElementById('passwordInput').value = '';
-        }
-    }
-
-    function handleEnterKey(e) {
-        if (e.key === 'Enter') checkPassword();
-    }
-
-    function checkAuthStatus() {
-        if (sessionStorage.setItem && sessionStorage.getItem('isLogged') === 'true') {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('appContent').style.display = 'block';
-        } else {
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('appContent').style.display = 'none';
-            setTimeout(() => {
-                const pInput = document.getElementById('passwordInput');
-                if(pInput) pInput.focus();
-            }, 100);
-        }
-    }
-
-    function logout() {
-        sessionStorage.removeItem('isLogged');
-        location.reload();
-    }
-
-    function initDatabase() {
-        const cfg = window.firebaseConfig;
-        if (typeof firebase !== 'undefined' && cfg && cfg.apiKey && !cfg.apiKey.includes("YOUR_API_KEY")) {
-            try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(cfg);
-                }
-                db = firebase.firestore();
-                db.enablePersistence().catch(err => console.log("Persistence:", err.code));
-
-                isFirebaseActive = true;
-                setDbStatus(true, `Google Firebase (${cfg.projectId}) Canlı Veritabanına Bağlandı!`);
-                listenFirestoreCollections();
-            } catch (error) {
-                console.error("Firebase Hatası:", error);
-                setDbStatus(false, "Firebase Bağlantı Hatası! Yerel Mod (localStorage) Aktif.");
-                loadLocalFallbackData();
-            }
-        } else {
-            setDbStatus(false, "⚠️ Demo / Yerel Mod: Firebase API Anahtarınız eksik.");
-            loadLocalFallbackData();
-        }
-    }
-
-    function setDbStatus(isCloud, text) {
-        const banner = document.getElementById('dbStatusBanner');
-        const textEl = document.getElementById('dbStatusText');
-        const badgeEl = document.getElementById('dbStatusBadge');
-
-        if(textEl) textEl.innerText = text;
-        if (isCloud) {
-            if(banner) banner.classList.add('connected');
-            if(badgeEl) badgeEl.innerText = "☁️ Bulut Aktif";
-        } else {
-            if(banner) banner.classList.remove('connected');
-            if(badgeEl) badgeEl.innerText = "💾 Yerel Mod";
-        }
-    }
-
-    function listenFirestoreCollections() {
-        db.collection("companies").onSnapshot(snap => {
-            savedCompanies = snap.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
-            if (savedCompanies.length === 0) {
-                defaultCompanies.forEach(c => db.collection("companies").add({ name: c, createdAt: Date.now() }));
-            } else {
-                renderSelects();
-                renderTable();
-            }
-        }, err => console.error("Companies Sync Error:", err));
-
-        db.collection("machines").onSnapshot(snap => {
-            savedMachines = snap.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
-            if (savedMachines.length === 0) {
-                defaultMachines.forEach(m => db.collection("machines").add({ name: m, createdAt: Date.now() }));
-            } else {
-                renderSelects();
-                renderTable();
-            }
-        }, err => console.error("Machines Sync Error:", err));
-
-        db.collection("operators").onSnapshot(snap => {
-            savedOperators = snap.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
-            if (savedOperators.length === 0) {
-                defaultOperators.forEach(o => db.collection("operators").add({ name: o, createdAt: Date.now() }));
-            } else {
-                renderSelects();
-                renderTable();
-            }
-        }, err => console.error("Operators Sync Error:", err));
-
-        db.collection("records").onSnapshot(snap => {
-            records = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            records.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            renderTable();
-        }, err => console.error("Records Sync Error:", err));
-
-        db.collection("payments").onSnapshot(snap => {
-            payments = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            payments.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            renderTable();
-        }, err => console.error("Payments Sync Error:", err));
-    }
-
-    function loadLocalFallbackData() {
-        savedCompanies = JSON.parse(localStorage.getItem('companiesList')) || defaultCompanies.map((c, i) => ({ id: 'c_' + i, name: c }));
-        savedMachines = JSON.parse(localStorage.getItem('machinesList')) || defaultMachines.map((m, i) => ({ id: 'm_' + i, name: m }));
-        savedOperators = JSON.parse(localStorage.getItem('operatorsList')) || defaultOperators.map((o, i) => ({ id: 'o_' + i, name: o }));
-        records = JSON.parse(localStorage.getItem('machineRecords')) || [];
-        payments = JSON.parse(localStorage.getItem('companyPayments')) || [];
-
+    async function loadAllData() {
+        savedCompanies = await DataService.getCompanies();
+        savedMachines = await DataService.getMachines();
+        savedOperators = await DataService.getOperators();
+        records = await DataService.getRecords();
+        payments = await DataService.getPayments();
+        
         renderSelects();
         renderTable();
     }
 
-    function saveLocalData() {
-        if (!isFirebaseActive) {
-            localStorage.setItem('companiesList', JSON.stringify(savedCompanies));
-            localStorage.setItem('machinesList', JSON.stringify(savedMachines));
-            localStorage.setItem('operatorsList', JSON.stringify(savedOperators));
-            localStorage.setItem('machineRecords', JSON.stringify(records));
-            localStorage.setItem('companyPayments', JSON.stringify(payments));
+    document.addEventListener('DOMContentLoaded', async () => {
+        initSupabase();
+        if (sessionStorage.getItem('isLogged') === 'true') {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContent').style.display = 'block';
+        } else {
+            document.getElementById('passwordInput').focus();
+        }
+        await loadAllData();
+        document.getElementById('paymentDate').valueAsDate = new Date();
+    });
+
+    function openDbSettings() {
+        document.getElementById('modalTitle').innerText = 'Supabase Veri Tabanı Ayarları';
+        const currentUrl = localStorage.getItem('supabase_url') || '';
+        const currentKey = localStorage.getItem('supabase_key') || '';
+
+        document.getElementById('modalContent').innerHTML = `
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <p style="font-size:0.88rem; color:var(--text-muted);">
+                    Supabase panelinizden aldığınız <strong>Project URL</strong> ve <strong>Anon API Key</strong> bilgilerinizi buraya giriniz:
+                </p>
+                <div class="form-group">
+                    <label>Supabase Project URL</label>
+                    <input type="text" id="dbUrlInput" value="${currentUrl}" placeholder="https://xxxx.supabase.co">
+                </div>
+                <div class="form-group">
+                    <label>Supabase Anon Key</label>
+                    <input type="password" id="dbKeyInput" value="${currentKey}" placeholder="eyJhbGciOiJIUzI1NiI...">
+                </div>
+                <div style="display:flex; gap:8px; margin-top:5px;">
+                    <button class="btn-primary" style="flex:1;" onclick="saveDbSettings()">Kaydet ve Bağlan</button>
+                    <button class="btn-danger" onclick="disconnectDb()">Bağlantıyı Kes</button>
+                </div>
+                <hr style="margin:10px 0; border:none; border-top:1px solid var(--border-color);">
+                <div style="background:#f8fafc; padding:12px; border-radius:4px; font-size:0.82rem; color:var(--text-muted);">
+                    <strong>💡 İpucu (SQL Tablo Kurulumu):</strong> Projenizdeki <code>supabase_setup.sql</code> dosyasındaki kodları Supabase panelinizdeki <strong>SQL Editor</strong> alanına kopyalayıp <strong>RUN</strong> diyerek tabloları saniyeler içinde oluşturabilirsiniz.
+                </div>
+            </div>
+        `;
+        document.getElementById('managerModal').style.display = 'flex';
+    }
+
+    function saveDbSettings() {
+        const url = document.getElementById('dbUrlInput').value.trim();
+        const key = document.getElementById('dbKeyInput').value.trim();
+
+        if (url && key) {
+            localStorage.setItem('supabase_url', url);
+            localStorage.setItem('supabase_key', key);
+            initSupabase();
+            loadAllData();
+            closeModal();
+            alert('Supabase veritabanı ayarları kaydedildi ve bağlantı test ediliyor!');
+        } else {
+            alert('Lütfen hem Project URL hem de Anon Key alanlarını doldurunuz.');
         }
     }
 
-    function renderSelects() {
-        const compHtml = savedCompanies.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-        document.getElementById('companyName').innerHTML = compHtml;
-        document.getElementById('paymentCompany').innerHTML = compHtml;
-
-        document.getElementById('machineName').innerHTML = savedMachines.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-        document.getElementById('operator').innerHTML = savedOperators.map(o => `<option value="${o.name}">${o.name}</option>`).join('');
+    function disconnectDb() {
+        localStorage.removeItem('supabase_url');
+        localStorage.removeItem('supabase_key');
+        initSupabase();
+        loadAllData();
+        closeModal();
+        alert('Supabase bağlantısı kesildi. Sistem Yerel Depolama (LocalStorage) moduna geçti.');
     }
 
+    function switchTab(tabId) {
+        document.getElementById('workTab').style.display = tabId === 'workTab' ? 'block' : 'none';
+        document.getElementById('paymentTab').style.display = tabId === 'paymentTab' ? 'block' : 'none';
+        
+        const buttons = document.querySelectorAll('.tab-btn');
+        buttons[0].classList.toggle('active', tabId === 'workTab');
+        buttons[1].classList.toggle('active', tabId === 'paymentTab');
+    }
+
+    // --- AÇILIR MENÜLERİ (SELECT) GÜNCELLEME ---
+    function renderSelects() {
+        const compHtml = savedCompanies.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('companyName').innerHTML = compHtml;
+        document.getElementById('paymentCompany').innerHTML = compHtml;
+        
+        document.getElementById('machineName').innerHTML = savedMachines.map(m => `<option value="${m}">${m}</option>`).join('');
+        document.getElementById('operator').innerHTML = savedOperators.map(o => `<option value="${o}">${o}</option>`).join('');
+    }
+
+    // --- YENİ VERİ EKLEME (FİRMA, MAKİNE, OPERATÖR) ---
     async function addCompany() {
-        try {
-            const name = prompt("Sisteme eklenecek Firma / Müşteri ünvanını giriniz:");
-            if (name && name.trim()) {
-                const cleanName = name.trim();
-                const exists = savedCompanies.some(c => c.name.toLowerCase() === cleanName.toLowerCase());
-                if (!exists) {
-                    if (isFirebaseActive) {
-                        const docRef = await db.collection("companies").add({ name: cleanName, createdAt: Date.now() });
-                        savedCompanies.push({ id: docRef.id, name: cleanName });
-                    } else {
-                        savedCompanies.push({ id: 'c_' + Date.now(), name: cleanName });
-                        saveLocalData();
-                    }
-                    renderSelects();
-                    document.getElementById('companyName').value = cleanName;
-                    document.getElementById('paymentCompany').value = cleanName;
-                    alert(`"${cleanName}" firması başarıyla eklendi!`);
-                } else {
-                    alert("Bu firma ismi zaten listede kayıtlı!");
-                }
-            }
-        } catch (err) {
-            console.error("Firma ekleme hatası:", err);
-            alert("Firma eklenirken bir hata oluştu: " + err.message);
+        const name = prompt("Sisteme eklenecek Firma / Müşteri ünvanını giriniz:");
+        if (name && name.trim() && !savedCompanies.includes(name.trim())) {
+            savedCompanies.push(name.trim());
+            await DataService.saveCompanies(savedCompanies);
+            renderSelects();
+            document.getElementById('companyName').value = name.trim();
         }
     }
 
     async function addMachine() {
-        try {
-            const name = prompt("Sisteme eklenecek makine veya plaka bilgisini giriniz:");
-            if (name && name.trim()) {
-                const cleanName = name.trim();
-                const exists = savedMachines.some(m => m.name.toLowerCase() === cleanName.toLowerCase());
-                if (!exists) {
-                    if (isFirebaseActive) {
-                        const docRef = await db.collection("machines").add({ name: cleanName, createdAt: Date.now() });
-                        savedMachines.push({ id: docRef.id, name: cleanName });
-                    } else {
-                        savedMachines.push({ id: 'm_' + Date.now(), name: cleanName });
-                        saveLocalData();
-                    }
-                    renderSelects();
-                    document.getElementById('machineName').value = cleanName;
-                    alert(`"${cleanName}" makinesi başarıyla eklendi!`);
-                } else {
-                    alert("Bu makine/plaka zaten listede kayıtlı!");
-                }
-            }
-        } catch (err) {
-            console.error("Makine ekleme hatası:", err);
-            alert("Makine eklenirken bir hata oluştu: " + err.message);
+        const name = prompt("Sisteme eklenecek makine veya plaka bilgisini giriniz:");
+        if (name && name.trim() && !savedMachines.includes(name.trim())) {
+            savedMachines.push(name.trim());
+            await DataService.saveMachines(savedMachines);
+            renderSelects();
+            document.getElementById('machineName').value = name.trim();
         }
     }
 
     async function addOperator() {
-        try {
-            const name = prompt("Sisteme eklenecek personel / operatör adını giriniz:");
-            if (name && name.trim()) {
-                const cleanName = name.trim();
-                const exists = savedOperators.some(o => o.name.toLowerCase() === cleanName.toLowerCase());
-                if (!exists) {
-                    if (isFirebaseActive) {
-                        const docRef = await db.collection("operators").add({ name: cleanName, createdAt: Date.now() });
-                        savedOperators.push({ id: docRef.id, name: cleanName });
-                    } else {
-                        savedOperators.push({ id: 'o_' + Date.now(), name: cleanName });
-                        saveLocalData();
-                    }
-                    renderSelects();
-                    document.getElementById('operator').value = cleanName;
-                    alert(`"${cleanName}" personeli başarıyla eklendi!`);
-                } else {
-                    alert("Bu personel zaten listede kayıtlı!");
-                }
-            }
-        } catch (err) {
-            console.error("Personel ekleme hatası:", err);
-            alert("Personel eklenirken bir hata oluştu: " + err.message);
-        }
-    }
-
-    async function addManagerItemInline() {
-        const input = document.getElementById('inlineNewInput');
-        if (!input || !input.value.trim()) return alert("Lütfen geçerli bir isim giriniz!");
-        
-        const cleanName = input.value.trim();
-        try {
-            if (currentManageType === 'company') {
-                if (isFirebaseActive) {
-                    const docRef = await db.collection("companies").add({ name: cleanName, createdAt: Date.now() });
-                    savedCompanies.push({ id: docRef.id, name: cleanName });
-                } else {
-                    savedCompanies.push({ id: 'c_' + Date.now(), name: cleanName });
-                    saveLocalData();
-                }
-            } else if (currentManageType === 'machine') {
-                if (isFirebaseActive) {
-                    const docRef = await db.collection("machines").add({ name: cleanName, createdAt: Date.now() });
-                    savedMachines.push({ id: docRef.id, name: cleanName });
-                } else {
-                    savedMachines.push({ id: 'm_' + Date.now(), name: cleanName });
-                    saveLocalData();
-                }
-            } else if (currentManageType === 'operator') {
-                if (isFirebaseActive) {
-                    const docRef = await db.collection("operators").add({ name: cleanName, createdAt: Date.now() });
-                    savedOperators.push({ id: docRef.id, name: cleanName });
-                } else {
-                    savedOperators.push({ id: 'o_' + Date.now(), name: cleanName });
-                    saveLocalData();
-                }
-            }
+        const name = prompt("Sisteme eklenecek personel adını giriniz:");
+        if (name && name.trim() && !savedOperators.includes(name.trim())) {
+            savedOperators.push(name.trim());
+            await DataService.saveOperators(savedOperators);
             renderSelects();
-            openManager(currentManageType);
-        } catch(err) {
-            alert("Ekleme yapılırken hata oluştu: " + err.message);
+            document.getElementById('operator').value = name.trim();
         }
     }
 
+    // --- CANLI HESAPLAMA ---
     function calculateLive() {
         const start = new Date(document.getElementById('startTime').value);
         const end = new Date(document.getElementById('endTime').value);
@@ -863,14 +1094,26 @@
             document.getElementById('liveTotal').innerText = "0.00";
         }
     }
+    
+    document.getElementById('hourlyRate').addEventListener('input', calculateLive);
+    document.getElementById('startTime').addEventListener('input', calculateLive);
+    document.getElementById('endTime').addEventListener('input', calculateLive);
 
+    // --- GÜVENLİK (DOĞRULAMA KODU) FONKSİYONU ---
     function verifyDeleteAction() {
         const securityCode = Math.floor(10 + Math.random() * 90);
         const userInput = prompt(`GÜVENLİK ONAYI:\n\nSilme işlemini onaylamak için lütfen ekrana '${securityCode}' yazınız:`);
-        return userInput === securityCode.toString();
+        
+        if (userInput === securityCode.toString()) {
+            return true;
+        } else {
+            alert("Hatalı kod girdiniz. Silme işlemi İPTAL EDİLDİ.");
+            return false;
+        }
     }
 
-    async function handleWorkSubmit(e) {
+    // --- FORM GÖNDERME İŞLEMLERİ ---
+    document.getElementById('trackingForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const start = new Date(document.getElementById('startTime').value);
         const end = new Date(document.getElementById('endTime').value);
@@ -881,7 +1124,8 @@
         const rate = parseFloat(document.getElementById('hourlyRate').value);
         const formatOptions = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
 
-        const newRecord = {
+        const newRec = {
+            id: Date.now(),
             companyName: document.getElementById('companyName').value,
             machineName: document.getElementById('machineName').value,
             operator: document.getElementById('operator').value,
@@ -891,47 +1135,35 @@
             formattedStart: start.toLocaleString('tr-TR', formatOptions),
             formattedEnd: end.toLocaleString('tr-TR', formatOptions),
             durationHours: hours.toFixed(2),
-            totalAmount: (hours * rate).toFixed(2),
-            createdAt: Date.now()
+            totalAmount: (hours * rate).toFixed(2)
         };
 
-        if (isFirebaseActive) {
-            await db.collection("records").add(newRecord);
-        } else {
-            newRecord.id = 'r_' + Date.now();
-            records.unshift(newRecord);
-            saveLocalData();
-            renderTable();
-        }
-
+        records.push(newRec);
+        await DataService.addRecord(newRec);
+        renderTable();
         document.getElementById('startTime').value = '';
         document.getElementById('endTime').value = '';
         calculateLive();
-    }
+    });
 
-    async function handlePaymentSubmit(e) {
+    document.getElementById('paymentForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        const newPayment = {
+        const newPay = {
+            id: Date.now(),
             companyName: document.getElementById('paymentCompany').value,
             amount: parseFloat(document.getElementById('paymentAmount').value).toFixed(2),
             date: new Date(document.getElementById('paymentDate').value).toLocaleDateString('tr-TR'),
-            note: document.getElementById('paymentNote').value.trim() || 'Tahsilat Belgesi',
-            createdAt: Date.now()
+            note: document.getElementById('paymentNote').value.trim() || 'Tahsilat Belgesi'
         };
 
-        if (isFirebaseActive) {
-            await db.collection("payments").add(newPayment);
-        } else {
-            newPayment.id = 'p_' + Date.now();
-            payments.unshift(newPayment);
-            saveLocalData();
-            renderTable();
-        }
-
+        payments.push(newPay);
+        await DataService.addPayment(newPay);
+        renderTable();
         document.getElementById('paymentAmount').value = '';
         document.getElementById('paymentNote').value = '';
-    }
+    });
 
+    // --- TABLO VE ÖZET RENDER İŞLEMİ ---
     function renderTable() {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
@@ -939,10 +1171,10 @@
         const compData = {};
 
         records.forEach((r) => {
-            gHours += parseFloat(r.durationHours || 0);
-            gCost += parseFloat(r.totalAmount || 0);
+            gHours += parseFloat(r.durationHours);
+            gCost += parseFloat(r.totalAmount);
             if (!compData[r.companyName]) compData[r.companyName] = { cost: 0, paid: 0 };
-            compData[r.companyName].cost += parseFloat(r.totalAmount || 0);
+            compData[r.companyName].cost += parseFloat(r.totalAmount);
 
             tbody.innerHTML += `<tr>
                 <td><strong>${r.companyName}</strong></td>
@@ -955,21 +1187,21 @@
                 <td><strong>${r.totalAmount} ₺</strong></td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-primary" onclick="editRecord('${r.id}')">Düzenle</button>
-                        <button class="btn-danger" onclick="deleteRecord('${r.id}')">Sil</button>
+                        <button class="btn-primary" onclick="editRecord(${r.id})">Düzenle</button>
+                        <button class="btn-danger" onclick="deleteRecord(${r.id})">Sil</button>
                     </div>
                 </td>
             </tr>`;
         });
 
-        if (records.length === 0) {
+        if(records.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">Sistemde kayıtlı veri bulunmamaktadır.</td></tr>';
         }
 
         payments.forEach(p => {
-            gPaid += parseFloat(p.amount || 0);
+            gPaid += parseFloat(p.amount);
             if (!compData[p.companyName]) compData[p.companyName] = { cost: 0, paid: 0 };
-            compData[p.companyName].paid += parseFloat(p.amount || 0);
+            compData[p.companyName].paid += parseFloat(p.amount);
         });
 
         document.getElementById('totalHours').innerText = gHours.toFixed(2);
@@ -993,23 +1225,24 @@
                     <div class="val-row" style="font-weight:bold; color:${statusColor}">
                         <span>Güncel Durum:</span> <span>${statusText}</span>
                     </div>
-                    <button class="btn-outline" style="width:100%; margin-top:10px;" onclick="showCompanyHistory('${comp}')">Cari Dökümü İncele</button>
+                    <button class="btn-outline" style="width:100%; margin-top:10px;" onclick="showCompanyHistory('${comp.replace(/'/g, "\\'")}')">Cari Dökümü İncele</button>
                 </div>`;
         }
     }
 
+    // --- DÜZENLEME MODALI ---
     function editRecord(id) {
         const rec = records.find(r => r.id === id);
         if (!rec) return;
 
         document.getElementById('modalTitle').innerText = 'Kayıt Düzenleme Paneli';
         
-        const cOpts = savedCompanies.map(c => `<option value="${c.name}" ${c.name===rec.companyName?'selected':''}>${c.name}</option>`).join('');
-        const mOpts = savedMachines.map(m => `<option value="${m.name}" ${m.name===rec.machineName?'selected':''}>${m.name}</option>`).join('');
-        const oOpts = savedOperators.map(o => `<option value="${o.name}" ${o.name===rec.operator?'selected':''}>${o.name}</option>`).join('');
+        const cOpts = savedCompanies.map(c => `<option value="${c}" ${c===rec.companyName?'selected':''}>${c}</option>`).join('');
+        const mOpts = savedMachines.map(m => `<option value="${m}" ${m===rec.machineName?'selected':''}>${m}</option>`).join('');
+        const oOpts = savedOperators.map(o => `<option value="${o}" ${o===rec.operator?'selected':''}>${o}</option>`).join('');
 
         document.getElementById('modalContent').innerHTML = `
-            <form id="editForm" class="form-grid" style="grid-template-columns: 1fr;" onsubmit="saveRecordEdit(event, '${id}')">
+            <form id="editForm" class="form-grid" style="grid-template-columns: 1fr;">
                 <div class="form-group"><label>Firma Ünvanı</label><select id="eComp">${cOpts}</select></div>
                 <div class="form-group"><label>Makine</label><select id="eMach">${mOpts}</select></div>
                 <div class="form-group"><label>Operatör</label><select id="eOp">${oOpts}</select></div>
@@ -1020,40 +1253,31 @@
             </form>
         `;
         document.getElementById('managerModal').style.display = 'flex';
-    }
 
-    async function saveRecordEdit(e, id) {
-        e.preventDefault();
-        const rec = records.find(r => r.id === id);
-        const start = new Date(document.getElementById('eStart').value);
-        const end = new Date(document.getElementById('eEnd').value);
-        if (end <= start) return alert("Hatalı tarih aralığı!");
-        
-        const hours = (end - start) / (1000*60*60);
-        const rate = parseFloat(document.getElementById('eRate').value);
-        const updatedData = {
-            companyName: document.getElementById('eComp').value,
-            machineName: document.getElementById('eMach').value,
-            operator: document.getElementById('eOp').value,
-            hourlyRate: rate,
-            startTimeIso: document.getElementById('eStart').value,
-            endTimeIso: document.getElementById('eEnd').value,
-            formattedStart: start.toLocaleString('tr-TR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }),
-            formattedEnd: end.toLocaleString('tr-TR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }),
-            durationHours: hours.toFixed(2),
-            totalAmount: (hours * rate).toFixed(2)
+        document.getElementById('editForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const start = new Date(document.getElementById('eStart').value);
+            const end = new Date(document.getElementById('eEnd').value);
+            if (end <= start) return alert("Hatalı tarih aralığı!");
+            
+            const hours = (end - start) / (1000*60*60);
+            rec.companyName = document.getElementById('eComp').value;
+            rec.machineName = document.getElementById('eMach').value;
+            rec.operator = document.getElementById('eOp').value;
+            rec.hourlyRate = parseFloat(document.getElementById('eRate').value);
+            rec.startTimeIso = document.getElementById('eStart').value;
+            rec.endTimeIso = document.getElementById('eEnd').value;
+            rec.formattedStart = start.toLocaleString('tr-TR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+            rec.formattedEnd = end.toLocaleString('tr-TR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+            rec.durationHours = hours.toFixed(2);
+            rec.totalAmount = (hours * rec.hourlyRate).toFixed(2);
+
+            await DataService.updateRecord(rec);
+            renderTable(); closeModal();
         };
-
-        if (isFirebaseActive) {
-            await db.collection("records").doc(id).update(updatedData);
-        } else {
-            Object.assign(rec, updatedData);
-            saveLocalData();
-            renderTable();
-        }
-        closeModal();
     }
 
+    // --- CARİ DÖKÜM İNCELEME ---
     function showCompanyHistory(comp) {
         document.getElementById('modalTitle').innerText = `${comp} - Cari Hesap Dökümü`;
         let html = '<div class="table-responsive"><table><thead><tr><th>İşlem Tarihi</th><th>Açıklama/Belge</th><th>Tutar</th><th>İşlem Tipi</th><th>Sil</th></tr></thead><tbody>';
@@ -1064,50 +1288,45 @@
             html += `<tr><td>${r.formattedStart}</td><td>${r.machineName} (${r.durationHours} Saat)</td>
             <td style="color:var(--danger); font-weight:bold;">+${r.totalAmount} ₺</td>
             <td>Hak Ediş İşlemi</td>
-            <td><button class="btn-danger" style="padding:4px 8px;" onclick="deleteRecord('${r.id}')">Sil</button></td></tr>`;
+            <td><button class="btn-danger" style="padding:4px 8px;" onclick="deleteRecord(${r.id})">Sil</button></td></tr>`;
         });
         payments.filter(p => p.companyName === comp).forEach(p => {
             hasData = true;
             html += `<tr><td>${p.date}</td><td>${p.note}</td>
             <td style="color:var(--success); font-weight:bold;">-${p.amount} ₺</td>
             <td>Tahsilat İşlemi</td>
-            <td><button class="btn-danger" style="padding:4px 8px;" onclick="deletePayment('${p.id}')">Sil</button></td></tr>`;
+            <td><button class="btn-danger" style="padding:4px 8px;" onclick="deletePayment(${p.id})">Sil</button></td></tr>`;
         });
         
-        if (!hasData) html += '<tr><td colspan="5" style="text-align:center;">Cari hareket bulunamadı.</td></tr>';
+        if(!hasData) html += '<tr><td colspan="5" style="text-align:center;">Cari hareket bulunamadı.</td></tr>';
         
         document.getElementById('modalContent').innerHTML = html + '</tbody></table></div>';
         document.getElementById('managerModal').style.display = 'flex';
     }
 
+    // --- SİLME İŞLEMLERİ ---
     async function deleteRecord(id) { 
-        if (verifyDeleteAction()) { 
-            if (isFirebaseActive) {
-                await db.collection("records").doc(id).delete();
-            } else {
-                records = records.filter(r => r.id !== id);
-                saveLocalData();
-                renderTable();
-            }
-            closeModal();
+        if(verifyDeleteAction()) { 
+            records = records.filter(r=>r.id!==id); 
+            await DataService.deleteRecord(id); 
+            renderTable(); 
+            closeModal(); 
         } 
     }
     
     async function deletePayment(id) { 
-        if (verifyDeleteAction()) { 
-            if (isFirebaseActive) {
-                await db.collection("payments").doc(id).delete();
-            } else {
-                payments = payments.filter(p => p.id !== id);
-                saveLocalData();
-                renderTable();
-            }
-            closeModal();
+        if(verifyDeleteAction()) { 
+            payments = payments.filter(p=>p.id!==id); 
+            await DataService.deletePayment(id); 
+            renderTable(); 
+            closeModal(); 
         } 
     }
 
+    // --- LİSTE YÖNETİMİ (FİRMA, MAKİNE, OPERATÖR) ---
     function openManager(type) {
         currentManageType = type;
+        
         let title = '';
         let list = [];
         
@@ -1124,88 +1343,64 @@
         
         document.getElementById('modalTitle').innerText = title;
         
-        let html = `
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <input type="text" id="inlineNewInput" placeholder="Yeni eklemek istediğiniz ismi yazın..." style="flex:1;">
-                <button class="btn-success" onclick="addManagerItemInline()">Hızlı Ekle</button>
-            </div>
-            <ul class="manage-list">
-        `;
-
-        list.forEach((item) => {
-            html += `<li><span>${item.name}</span> <button class="btn-danger" style="padding:4px 10px;" onclick="deleteOption('${item.id}')">Sil</button></li>`;
+        let html = '<ul class="manage-list">';
+        list.forEach((item, i) => {
+            html += `<li><span>${item}</span> <button class="btn-danger" style="padding:4px 10px;" onclick="deleteOption(${i})">Sil</button></li>`;
         });
         html += '</ul>';
         
         document.getElementById('modalContent').innerHTML = html;
         document.getElementById('managerModal').style.display = 'flex';
-
-        setTimeout(() => {
-            const inp = document.getElementById('inlineNewInput');
-            if(inp) inp.focus();
-        }, 100);
     }
 
-    async function deleteOption(id) {
-        if (verifyDeleteAction()) {
-            if (isFirebaseActive) {
-                let collectionName = currentManageType === 'machine' ? 'machines' : (currentManageType === 'operator' ? 'operators' : 'companies');
-                await db.collection(collectionName).doc(id).delete();
-            } else {
-                if (currentManageType === 'machine') savedMachines = savedMachines.filter(x => x.id !== id);
-                else if (currentManageType === 'operator') savedOperators = savedOperators.filter(x => x.id !== id);
-                else if (currentManageType === 'company') savedCompanies = savedCompanies.filter(x => x.id !== id);
-                saveLocalData();
-                renderSelects();
+    async function deleteOption(i) {
+        if(verifyDeleteAction()) {
+            let itemToDelete = null;
+            if(currentManageType === 'machine') {
+                itemToDelete = savedMachines[i];
+                savedMachines.splice(i, 1);
+                await DataService.saveMachines(savedMachines);
+            } else if(currentManageType === 'operator') {
+                itemToDelete = savedOperators[i];
+                savedOperators.splice(i, 1);
+                await DataService.saveOperators(savedOperators);
+            } else if(currentManageType === 'company') {
+                itemToDelete = savedCompanies[i];
+                savedCompanies.splice(i, 1);
+                await DataService.saveCompanies(savedCompanies);
             }
+            if (itemToDelete) {
+                await DataService.deleteOptionFromList(currentManageType, itemToDelete);
+            }
+            renderSelects(); 
             openManager(currentManageType);
         }
     }
 
-    function closeModal() { 
-        document.getElementById('managerModal').style.display = 'none'; 
-    }
+    function closeModal() { document.getElementById('managerModal').style.display = 'none'; }
 
-    function switchTab(tabId) {
-        document.getElementById('workTab').style.display = tabId === 'workTab' ? 'block' : 'none';
-        document.getElementById('paymentTab').style.display = tabId === 'paymentTab' ? 'block' : 'none';
-        
-        document.getElementById('tabWorkBtn').classList.toggle('active', tabId === 'workTab');
-        document.getElementById('tabPaymentBtn').classList.toggle('active', tabId === 'paymentTab');
-    }
-
-    // --- GELİŞMİŞ VE TÜM SİSTEMİ AKTARAN EXCEL İNDİRME FONKSİYONU ---
+    /* --- GELİŞMİŞ VE DETAYLI EXCEL AKTARIM FONKSİYONU --- */
     function exportToExcelDetailed() {
-        if (records.length === 0 && payments.length === 0 && savedCompanies.length === 0) {
+        if (records.length === 0 && payments.length === 0) {
             alert("Sistem Uyarısı: Dışa aktarılacak veri bulunmamaktadır.");
             return;
         }
 
         const wb = XLSX.utils.book_new();
         
-        // 1. SAYFA: CARİ HESAP ÖZETİ (TÜM FİRMALAR & GENEL TOPLAM)
+        // 1. CARİ HESAP ÖZETİ SAYFASI
         const compData = {};
-        let totalHakEdis = 0, totalTahsilat = 0, totalHours = 0;
+        let totalHakEdis = 0, totalTahsilat = 0;
         
         records.forEach(r => {
-            if (!compData[r.companyName]) compData[r.companyName] = { hours: 0, cost: 0, paid: 0 };
-            compData[r.companyName].hours += parseFloat(r.durationHours || 0);
-            compData[r.companyName].cost += parseFloat(r.totalAmount || 0);
-            totalHours += parseFloat(r.durationHours || 0);
-            totalHakEdis += parseFloat(r.totalAmount || 0);
+            if (!compData[r.companyName]) compData[r.companyName] = { cost: 0, paid: 0 };
+            compData[r.companyName].cost += parseFloat(r.totalAmount);
+            totalHakEdis += parseFloat(r.totalAmount);
         });
-
         payments.forEach(p => {
-            if (!compData[p.companyName]) compData[p.companyName] = { hours: 0, cost: 0, paid: 0 };
-            compData[p.companyName].paid += parseFloat(p.amount || 0);
-            totalTahsilat += parseFloat(p.amount || 0);
-        });
-
-        // Hareketi olmasa bile sistemdeki tüm firmaları cari özet sayfasına ekle
-        savedCompanies.forEach(c => {
-            if (!compData[c.name]) {
-                compData[c.name] = { hours: 0, cost: 0, paid: 0 };
-            }
+            if (!compData[p.companyName]) compData[p.companyName] = { cost: 0, paid: 0 };
+            compData[p.companyName].paid += parseFloat(p.amount);
+            totalTahsilat += parseFloat(p.amount);
         });
 
         const summaryRows = [];
@@ -1215,78 +1410,59 @@
             
             summaryRows.push({
                 "Firma Ünvanı": comp,
-                "Toplam Çalışma (Saat)": parseFloat(data.hours.toFixed(2)),
-                "Toplam Hak Ediş (TL)": parseFloat(data.cost.toFixed(2)),
-                "Toplam Tahsilat (TL)": parseFloat(data.paid.toFixed(2)),
-                "Kalan Bakiye (TL)": parseFloat(bakiye.toFixed(2)),
+                "Toplam Hak Ediş (TL)": data.cost,
+                "Toplam Tahsilat (TL)": data.paid,
+                "Kalan Bakiye (TL)": bakiye,
                 "Güncel Cari Durum": durum
             });
         }
         
-        // GENEL TOPLAM SATIRI
         summaryRows.push({
-            "Firma Ünvanı": "=== GENEL TOPLAM ===",
-            "Toplam Çalışma (Saat)": parseFloat(totalHours.toFixed(2)),
-            "Toplam Hak Ediş (TL)": parseFloat(totalHakEdis.toFixed(2)),
-            "Toplam Tahsilat (TL)": parseFloat(totalTahsilat.toFixed(2)),
-            "Kalan Bakiye (TL)": parseFloat((totalHakEdis - totalTahsilat).toFixed(2)),
+            "Firma Ünvanı": "GENEL TOPLAM",
+            "Toplam Hak Ediş (TL)": totalHakEdis,
+            "Toplam Tahsilat (TL)": totalTahsilat,
+            "Kalan Bakiye (TL)": totalHakEdis - totalTahsilat,
             "Güncel Cari Durum": "-"
         });
 
         const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-        wsSummary['!cols'] = [{wch: 35}, {wch: 22}, {wch: 22}, {wch: 22}, {wch: 22}, {wch: 20}];
+        wsSummary['!cols'] = [{wch: 35}, {wch: 25}, {wch: 25}, {wch: 25}, {wch: 20}];
         XLSX.utils.book_append_sheet(wb, wsSummary, "1 - Cari Hesap Özeti");
 
-        // 2. SAYFA: ÇALIŞMA KAYITLARI (TÜM MESAİ DETAYLARI)
-        const workRows = records.map((r, index) => ({
-            "İşlem No": index + 1,
-            "Firma Ünvanı": r.companyName || "-",
-            "Makine / Plaka": r.machineName || "-",
-            "Operatör": r.operator || "-",
-            "Saatlik Ücret (TL)": parseFloat(r.hourlyRate || 0),
-            "Mesai Başlangıç Tarihi": r.formattedStart || "-",
-            "Mesai Bitiş Tarihi": r.formattedEnd || "-",
-            "Toplam Çalışma (Saat)": parseFloat(r.durationHours || 0),
-            "Kesinleşen Hak Ediş (TL)": parseFloat(r.totalAmount || 0)
-        }));
-        const wsWork = XLSX.utils.json_to_sheet(workRows.length > 0 ? workRows : [{"Bilgi": "Kayıtlı çalışma verisi bulunmamaktadır."}]);
-        if (workRows.length > 0) {
-            wsWork['!cols'] = [{wch: 10}, {wch: 35}, {wch: 22}, {wch: 22}, {wch: 18}, {wch: 25}, {wch: 25}, {wch: 22}, {wch: 22}];
+        // 2. DETAYLI ÇALIŞMA KAYITLARI SAYFASI
+        if (records.length > 0) {
+            const workRows = records.map((r, index) => ({
+                "İşlem No": index + 1,
+                "Firma Ünvanı": r.companyName,
+                "Makine / Plaka": r.machineName,
+                "Operatör": r.operator,
+                "Saatlik Ücret (TL)": parseFloat(r.hourlyRate),
+                "Mesai Başlangıç Tarihi": r.formattedStart,
+                "Mesai Bitiş Tarihi": r.formattedEnd,
+                "Toplam Çalışma (Saat)": parseFloat(r.durationHours),
+                "Kesinleşen Hak Ediş (TL)": parseFloat(r.totalAmount)
+            }));
+            const wsWork = XLSX.utils.json_to_sheet(workRows);
+            wsWork['!cols'] = [{wch: 10}, {wch: 35}, {wch: 25}, {wch: 25}, {wch: 20}, {wch: 25}, {wch: 25}, {wch: 25}, {wch: 25}];
+            XLSX.utils.book_append_sheet(wb, wsWork, "2 - Çalışma Hareketleri");
         }
-        XLSX.utils.book_append_sheet(wb, wsWork, "2 - Çalışma Kayıtları");
 
-        // 3. SAYFA: TAHSİLAT KAYITLARI (TÜM ÖDEME DETAYLARI)
-        const payRows = payments.map((p, index) => ({
-            "İşlem No": index + 1,
-            "Firma Ünvanı": p.companyName || "-",
-            "Tahsilat Tarihi": p.date || "-",
-            "Alınan Tutar (TL)": parseFloat(p.amount || 0),
-            "Açıklama / Belge / Not": p.note || "-"
-        }));
-        const wsPay = XLSX.utils.json_to_sheet(payRows.length > 0 ? payRows : [{"Bilgi": "Kayıtlı tahsilat verisi bulunmamaktadır."}]);
-        if (payRows.length > 0) {
+        // 3. DETAYLI TAHSİLAT KAYITLARI SAYFASI
+        if (payments.length > 0) {
+            const payRows = payments.map((p, index) => ({
+                "İşlem No": index + 1,
+                "Firma Ünvanı": p.companyName,
+                "Tahsilat Tarihi": p.date,
+                "Alınan Tutar (TL)": parseFloat(p.amount),
+                "Açıklama / Belge / Not": p.note
+            }));
+            const wsPay = XLSX.utils.json_to_sheet(payRows);
             wsPay['!cols'] = [{wch: 10}, {wch: 35}, {wch: 20}, {wch: 20}, {wch: 40}];
+            XLSX.utils.book_append_sheet(wb, wsPay, "3 - Tahsilat Hareketleri");
         }
-        XLSX.utils.book_append_sheet(wb, wsPay, "3 - Tahsilat Kayıtları");
 
-        // 4. SAYFA: TANIMLI LİSTELER (SİSTEMDEKİ TÜM FİRMA, MAKİNE VE OPERATÖRLER)
-        const maxLength = Math.max(savedCompanies.length, savedMachines.length, savedOperators.length, 1);
-        const listRows = [];
-        for (let i = 0; i < maxLength; i++) {
-            listRows.push({
-                "Sıra No": i + 1,
-                "Sistemdeki Tüm Firmalar": savedCompanies[i] ? savedCompanies[i].name : "",
-                "Sistemdeki Tüm Makineler / Plakalar": savedMachines[i] ? savedMachines[i].name : "",
-                "Sistemdeki Tüm Operatörler / Personel": savedOperators[i] ? savedOperators[i].name : ""
-            });
-        }
-        const wsLists = XLSX.utils.json_to_sheet(listRows);
-        wsLists['!cols'] = [{wch: 8}, {wch: 35}, {wch: 32}, {wch: 32}];
-        XLSX.utils.book_append_sheet(wb, wsLists, "4 - Sistem Tanımlı Listeleri");
-
-        // EXCEL DOSYASINI İNDİR
         const today = new Date().toLocaleDateString('tr-TR').replace(/\./g, '-');
-        XLSX.writeFile(wb, `Is_Makinesi_Tum_Sistem_Raporu_${today}.xlsx`);
+        XLSX.writeFile(wb, `Sistem_Detayli_Rapor_${today}.xlsx`);
     }
 </script>
 
