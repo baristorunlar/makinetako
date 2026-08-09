@@ -712,6 +712,9 @@
     }
 
     // --- SUPABASE VE VERİ KATMANI SOYUTLAMA (DATA SERVICE) ---
+    const DEFAULT_SUPABASE_URL = "https://raytnnezrlukksardpth.supabase.co";
+    const DEFAULT_SUPABASE_KEY = "sb_publishable_xwyq-p6d46CcphasB3ETHQ_gnYQM0MR";
+
     const defaultCompanies = ["ABC İnşaat A.Ş.", "Örnek Hafriyat"];
     const defaultMachines = ["MAVİ MANİTU", "Ekskavatör", "Loder", "JCB"];
     const defaultOperators = ["MUSTAFA ÖZYILMAZ", "Ahmet Yılmaz", "Mehmet Demir"];
@@ -719,8 +722,8 @@
     let supabaseClient = null;
 
     function initSupabase() {
-        const url = localStorage.getItem('supabase_url') || '';
-        const key = localStorage.getItem('supabase_key') || '';
+        const url = localStorage.getItem('supabase_url') || DEFAULT_SUPABASE_URL;
+        const key = localStorage.getItem('supabase_key') || DEFAULT_SUPABASE_KEY;
 
         if (url && key && window.supabase) {
             try {
@@ -975,8 +978,8 @@
 
     function openDbSettings() {
         document.getElementById('modalTitle').innerText = 'Supabase Veri Tabanı Ayarları';
-        const currentUrl = localStorage.getItem('supabase_url') || '';
-        const currentKey = localStorage.getItem('supabase_key') || '';
+        const currentUrl = localStorage.getItem('supabase_url') || DEFAULT_SUPABASE_URL;
+        const currentKey = localStorage.getItem('supabase_key') || DEFAULT_SUPABASE_KEY;
 
         document.getElementById('modalContent').innerHTML = `
             <div style="display:flex; flex-direction:column; gap:12px;">
@@ -993,7 +996,7 @@
                 </div>
                 <div style="display:flex; gap:8px; margin-top:5px;">
                     <button class="btn-primary" style="flex:1;" onclick="saveDbSettings()">Kaydet ve Bağlan</button>
-                    <button class="btn-danger" onclick="disconnectDb()">Bağlantıyı Kes</button>
+                    <button class="btn-danger" onclick="disconnectDb()">Varsayılana Sıfırla / Bağlantıyı Kes</button>
                 </div>
                 <hr style="margin:10px 0; border:none; border-top:1px solid var(--border-color);">
                 <div style="background:#f8fafc; padding:12px; border-radius:4px; font-size:0.82rem; color:var(--text-muted);">
@@ -1026,7 +1029,7 @@
         initSupabase();
         loadAllData();
         closeModal();
-        alert('Supabase bağlantısı kesildi. Sistem Yerel Depolama (LocalStorage) moduna geçti.');
+        alert('Supabase bağlantısı sıfırlandı.');
     }
 
     function switchTab(tabId) {
