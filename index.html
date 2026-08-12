@@ -971,26 +971,46 @@
             }
         },
         async getCompanies() {
-            let local = JSON.parse(localStorage.getItem('companiesList')) || defaultCompanies;
+            let localRaw = localStorage.getItem('companiesList');
+            let local = localRaw !== null ? JSON.parse(localRaw) : null;
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient.from('companies').select('name').order('id', { ascending: true });
-                    if (!error && data && data.length > 0) {
+                    if (!error && data) {
                         const dbList = data.map(d => d.name);
-                        const merged = Array.from(new Set([...local, ...dbList]));
-                        localStorage.setItem('companiesList', JSON.stringify(merged));
-                        updateDbStatusBadge('online');
-                        return merged;
+                        if (dbList.length > 0) {
+                            localStorage.setItem('companiesList', JSON.stringify(dbList));
+                            updateDbStatusBadge('online');
+                            return dbList;
+                        } else if (local !== null) {
+                            await this.saveCompanies(local);
+                            updateDbStatusBadge('online');
+                            return local;
+                        }
                     }
                 } catch (err) { console.error('getCompanies hatasi:', err); }
             }
+            if (local !== null) {
+                updateDbStatusBadge('local');
+                return local;
+            }
+            localStorage.setItem('companiesList', JSON.stringify(defaultCompanies));
             updateDbStatusBadge('local');
-            return local;
+            return defaultCompanies;
         },
         async saveCompanies(list) {
             localStorage.setItem('companiesList', JSON.stringify(list));
             if (supabaseClient) {
                 try {
+                    const { data } = await supabaseClient.from('companies').select('name');
+                    if (data) {
+                        const existing = data.map(d => d.name);
+                        for (const oldName of existing) {
+                            if (!list.includes(oldName)) {
+                                await supabaseClient.from('companies').delete().eq('name', oldName);
+                            }
+                        }
+                    }
                     for (const name of list) {
                         await supabaseClient.from('companies').upsert({ name }, { onConflict: 'name' });
                     }
@@ -998,26 +1018,46 @@
             }
         },
         async getMachines() {
-            let local = JSON.parse(localStorage.getItem('machinesList')) || defaultMachines;
+            let localRaw = localStorage.getItem('machinesList');
+            let local = localRaw !== null ? JSON.parse(localRaw) : null;
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient.from('machines').select('name').order('id', { ascending: true });
-                    if (!error && data && data.length > 0) {
+                    if (!error && data) {
                         const dbList = data.map(d => d.name);
-                        const merged = Array.from(new Set([...local, ...dbList]));
-                        localStorage.setItem('machinesList', JSON.stringify(merged));
-                        updateDbStatusBadge('online');
-                        return merged;
+                        if (dbList.length > 0) {
+                            localStorage.setItem('machinesList', JSON.stringify(dbList));
+                            updateDbStatusBadge('online');
+                            return dbList;
+                        } else if (local !== null) {
+                            await this.saveMachines(local);
+                            updateDbStatusBadge('online');
+                            return local;
+                        }
                     }
                 } catch (err) { console.error('getMachines hatasi:', err); }
             }
+            if (local !== null) {
+                updateDbStatusBadge('local');
+                return local;
+            }
+            localStorage.setItem('machinesList', JSON.stringify(defaultMachines));
             updateDbStatusBadge('local');
-            return local;
+            return defaultMachines;
         },
         async saveMachines(list) {
             localStorage.setItem('machinesList', JSON.stringify(list));
             if (supabaseClient) {
                 try {
+                    const { data } = await supabaseClient.from('machines').select('name');
+                    if (data) {
+                        const existing = data.map(d => d.name);
+                        for (const oldName of existing) {
+                            if (!list.includes(oldName)) {
+                                await supabaseClient.from('machines').delete().eq('name', oldName);
+                            }
+                        }
+                    }
                     for (const name of list) {
                         await supabaseClient.from('machines').upsert({ name }, { onConflict: 'name' });
                     }
@@ -1025,26 +1065,46 @@
             }
         },
         async getOperators() {
-            let local = JSON.parse(localStorage.getItem('operatorsList')) || defaultOperators;
+            let localRaw = localStorage.getItem('operatorsList');
+            let local = localRaw !== null ? JSON.parse(localRaw) : null;
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient.from('operators').select('name').order('id', { ascending: true });
-                    if (!error && data && data.length > 0) {
+                    if (!error && data) {
                         const dbList = data.map(d => d.name);
-                        const merged = Array.from(new Set([...local, ...dbList]));
-                        localStorage.setItem('operatorsList', JSON.stringify(merged));
-                        updateDbStatusBadge('online');
-                        return merged;
+                        if (dbList.length > 0) {
+                            localStorage.setItem('operatorsList', JSON.stringify(dbList));
+                            updateDbStatusBadge('online');
+                            return dbList;
+                        } else if (local !== null) {
+                            await this.saveOperators(local);
+                            updateDbStatusBadge('online');
+                            return local;
+                        }
                     }
                 } catch (err) { console.error('getOperators hatasi:', err); }
             }
+            if (local !== null) {
+                updateDbStatusBadge('local');
+                return local;
+            }
+            localStorage.setItem('operatorsList', JSON.stringify(defaultOperators));
             updateDbStatusBadge('local');
-            return local;
+            return defaultOperators;
         },
         async saveOperators(list) {
             localStorage.setItem('operatorsList', JSON.stringify(list));
             if (supabaseClient) {
                 try {
+                    const { data } = await supabaseClient.from('operators').select('name');
+                    if (data) {
+                        const existing = data.map(d => d.name);
+                        for (const oldName of existing) {
+                            if (!list.includes(oldName)) {
+                                await supabaseClient.from('operators').delete().eq('name', oldName);
+                            }
+                        }
+                    }
                     for (const name of list) {
                         await supabaseClient.from('operators').upsert({ name }, { onConflict: 'name' });
                     }
