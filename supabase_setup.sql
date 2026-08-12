@@ -37,8 +37,12 @@ CREATE TABLE IF NOT EXISTS public.work_records (
     formatted_end TEXT,
     duration_hours NUMERIC(10, 2) NOT NULL DEFAULT 0,
     total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    extra_note TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Hali hazırda kurulmuş veritabanı tablonuza Ek Not sütununu eklemek için aşağıdaki SQL komutunu çalıştırabilirsiniz:
+ALTER TABLE public.work_records ADD COLUMN IF NOT EXISTS extra_note TEXT DEFAULT '';
 
 -- 5. TAHSİLAT / ÖDEME KAYITLARI TABLOSU
 CREATE TABLE IF NOT EXISTS public.payments (
