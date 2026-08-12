@@ -999,20 +999,14 @@
             return defaultCompanies;
         },
         async saveCompanies(list) {
+            if (!Array.isArray(list)) return;
             localStorage.setItem('companiesList', JSON.stringify(list));
             if (supabaseClient) {
                 try {
-                    const { data } = await supabaseClient.from('companies').select('name');
-                    if (data) {
-                        const existing = data.map(d => d.name);
-                        for (const oldName of existing) {
-                            if (!list.includes(oldName)) {
-                                await supabaseClient.from('companies').delete().eq('name', oldName);
-                            }
-                        }
-                    }
                     for (const name of list) {
-                        await supabaseClient.from('companies').upsert({ name }, { onConflict: 'name' });
+                        if (name && name.trim()) {
+                            await supabaseClient.from('companies').upsert({ name: name.trim() }, { onConflict: 'name' });
+                        }
                     }
                 } catch (err) { console.error('saveCompanies hatasi:', err); }
             }
@@ -1046,20 +1040,14 @@
             return defaultMachines;
         },
         async saveMachines(list) {
+            if (!Array.isArray(list)) return;
             localStorage.setItem('machinesList', JSON.stringify(list));
             if (supabaseClient) {
                 try {
-                    const { data } = await supabaseClient.from('machines').select('name');
-                    if (data) {
-                        const existing = data.map(d => d.name);
-                        for (const oldName of existing) {
-                            if (!list.includes(oldName)) {
-                                await supabaseClient.from('machines').delete().eq('name', oldName);
-                            }
-                        }
-                    }
                     for (const name of list) {
-                        await supabaseClient.from('machines').upsert({ name }, { onConflict: 'name' });
+                        if (name && name.trim()) {
+                            await supabaseClient.from('machines').upsert({ name: name.trim() }, { onConflict: 'name' });
+                        }
                     }
                 } catch (err) { console.error('saveMachines hatasi:', err); }
             }
@@ -1093,20 +1081,14 @@
             return defaultOperators;
         },
         async saveOperators(list) {
+            if (!Array.isArray(list)) return;
             localStorage.setItem('operatorsList', JSON.stringify(list));
             if (supabaseClient) {
                 try {
-                    const { data } = await supabaseClient.from('operators').select('name');
-                    if (data) {
-                        const existing = data.map(d => d.name);
-                        for (const oldName of existing) {
-                            if (!list.includes(oldName)) {
-                                await supabaseClient.from('operators').delete().eq('name', oldName);
-                            }
-                        }
-                    }
                     for (const name of list) {
-                        await supabaseClient.from('operators').upsert({ name }, { onConflict: 'name' });
+                        if (name && name.trim()) {
+                            await supabaseClient.from('operators').upsert({ name: name.trim() }, { onConflict: 'name' });
+                        }
                     }
                 } catch (err) { console.error('saveOperators hatasi:', err); }
             }
@@ -1142,6 +1124,14 @@
                             const existingNote = existing ? (existing.extraNote || existing.extra_note || '') : '';
                             const dbNote = dbR.extraNote || dbR.extra_note || '';
                             const noteToUse = dbNote || existingNote;
+
+                            // Veritabanında not yoksa ama cihazda not varsa, diğer tüm cihazların görmesi için veritabanına otomatik yükle
+                            if (!dbNote && existingNote && supabaseClient) {
+                                supabaseClient.from('work_records').update({ extra_note: existingNote }).eq('id', dbR.id).then(({ error }) => {
+                                    if (error) console.warn('Supabase not esitleme hatasi:', error);
+                                });
+                            }
+
                             recMap.set(dbR.id, {
                                 ...(existing || {}),
                                 ...dbR,
@@ -1411,6 +1401,42 @@
         renderTable();
     }
 
+    let syncInterval = null;
+    function setupRealtimeSync() {
+        if (supabaseClient) {
+            try {
+                supabaseClient
+                    .channel('realtime-multi-device-sync')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'work_records' }, async () => {
+                        console.log('Realtime veritabanı değişikliği algılandı...');
+                        await loadAllData();
+                    })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, async () => {
+                        await loadAllData();
+                    })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, async () => {
+                        await loadAllData();
+                    })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'machines' }, async () => {
+                        await loadAllData();
+                    })
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'operators' }, async () => {
+                        await loadAllData();
+                    })
+                    .subscribe();
+            } catch (err) {
+                console.error('Realtime abonelik hatasi:', err);
+            }
+        }
+        if (!syncInterval) {
+            syncInterval = setInterval(async () => {
+                if (sessionStorage.getItem('isLogged') === 'true') {
+                    await loadAllData();
+                }
+            }, 5000); // Tüm cihazlar arasında her 5 saniyede bir verileri canlı olarak eşitle
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
         initSupabase();
         if (sessionStorage.getItem('isLogged') === 'true') {
@@ -1420,6 +1446,7 @@
             document.getElementById('passwordInput').focus();
         }
         await loadAllData();
+        setupRealtimeSync();
         document.getElementById('paymentDate').valueAsDate = new Date();
     });
 
