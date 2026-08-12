@@ -1099,50 +1099,40 @@
                 try {
                     const { data, error } = await supabaseClient.from('work_records').select('*').order('start_time_iso', { ascending: false });
                     if (!error && data) {
-                        const dbRecords = data.map(r => ({
-                            id: Number(r.id),
-                            companyName: r.company_name,
-                            machineName: r.machine_name,
-                            operator: r.operator,
-                            hourlyRate: Number(r.hourly_rate),
-                            startTimeIso: r.start_time_iso,
-                            endTimeIso: r.end_time_iso,
-                            formattedStart: r.formatted_start,
-                            formattedEnd: r.formatted_end,
-                            durationHours: String(r.duration_hours),
-                            totalAmount: String(r.total_amount),
-                            extraNote: r.extra_note || r.extraNote || ''
-                        }));
+                        const localMap = new Map();
+                        localRecords.forEach(r => localMap.set(Number(r.id), r));
 
-                        const recMap = new Map();
-                        localRecords.forEach(r => recMap.set(r.id, {
-                            ...r,
-                            extraNote: r.extraNote || r.extra_note || ''
-                        }));
-                        dbRecords.forEach(dbR => {
-                            const existing = recMap.get(dbR.id);
-                            const existingNote = existing ? (existing.extraNote || existing.extra_note || '') : '';
-                            const dbNote = dbR.extraNote || dbR.extra_note || '';
-                            const noteToUse = dbNote || existingNote;
+                        const dbRecords = data.map(r => {
+                            const localRec = localMap.get(Number(r.id));
+                            const localNote = localRec ? (localRec.extraNote || localRec.extra_note || '') : '';
+                            const dbNote = r.extra_note || r.extraNote || '';
+                            const noteToUse = dbNote || localNote;
 
-                            // Veritabanında not yoksa ama cihazda not varsa, diğer tüm cihazların görmesi için veritabanına otomatik yükle
-                            if (!dbNote && existingNote && supabaseClient) {
-                                supabaseClient.from('work_records').update({ extra_note: existingNote }).eq('id', dbR.id).then(({ error }) => {
+                            if (!dbNote && localNote && supabaseClient) {
+                                supabaseClient.from('work_records').update({ extra_note: localNote }).eq('id', Number(r.id)).then(({ error }) => {
                                     if (error) console.warn('Supabase not esitleme hatasi:', error);
                                 });
                             }
 
-                            recMap.set(dbR.id, {
-                                ...(existing || {}),
-                                ...dbR,
+                            return {
+                                id: Number(r.id),
+                                companyName: r.company_name,
+                                machineName: r.machine_name,
+                                operator: r.operator,
+                                hourlyRate: Number(r.hourly_rate),
+                                startTimeIso: r.start_time_iso,
+                                endTimeIso: r.end_time_iso,
+                                formattedStart: r.formatted_start,
+                                formattedEnd: r.formatted_end,
+                                durationHours: String(r.duration_hours),
+                                totalAmount: String(r.total_amount),
                                 extraNote: noteToUse
-                            });
+                            };
                         });
 
-                        const merged = Array.from(recMap.values());
-                        localStorage.setItem('machineRecords', JSON.stringify(merged));
+                        localStorage.setItem('machineRecords', JSON.stringify(dbRecords));
                         updateDbStatusBadge('online');
-                        return merged;
+                        return dbRecords;
                     } else if (error) {
                         console.warn('Supabase getRecords uyarisi, yerel depolama verisi kullaniliyor:', error);
                     }
@@ -1175,7 +1165,6 @@
                     const { error } = await supabaseClient.from('work_records').insert([payload]);
                     if (error) {
                         console.error('Supabase addRecord hatasi:', error);
-                        // Eğer Supabase tablosunda extra_note sütunu tanımlı değilse, extra_note olmadan tekrar dene
                         if (error.message && (error.message.includes('extra_note') || error.code === 'PGRST204')) {
                             delete payload.extra_note;
                             await supabaseClient.from('work_records').insert([payload]);
@@ -1218,7 +1207,7 @@
         },
         async deleteRecord(id) {
             let localRecords = JSON.parse(localStorage.getItem('machineRecords')) || [];
-            localRecords = localRecords.filter(r => r.id !== id);
+            localRecords = localRecords.filter(r => Number(r.id) !== Number(id));
             localStorage.setItem('machineRecords', JSON.stringify(localRecords));
 
             if (supabaseClient) {
@@ -1242,14 +1231,9 @@
                             note: p.note
                         }));
 
-                        const payMap = new Map();
-                        localPayments.forEach(p => payMap.set(p.id, p));
-                        dbPayments.forEach(p => payMap.set(p.id, p));
-
-                        const merged = Array.from(payMap.values());
-                        localStorage.setItem('companyPayments', JSON.stringify(merged));
+                        localStorage.setItem('companyPayments', JSON.stringify(dbPayments));
                         updateDbStatusBadge('online');
-                        return merged;
+                        return dbPayments;
                     } else if (error) {
                         console.warn('Supabase getPayments uyarisi, yerel depolama verisi kullaniliyor:', error);
                     }
