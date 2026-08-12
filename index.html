@@ -653,7 +653,10 @@
                 <span class="badge-tag">✨ BARIŞ TORUNLAR PROJESİDİR</span>
                 <h1>🚜 MAKİNE TAKİP & CARİ HESAP SİSTEMİ</h1>
             </div>
-            <button class="btn-danger" onclick="logout()">Güvenli Çıkış</button>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <span id="dbStatusBadge" style="font-size:0.78rem; padding:5px 12px; border-radius:20px; font-weight:bold; background:rgba(22, 101, 52, 0.35); color:#86efac; border:1px solid rgba(34, 197, 94, 0.4); display:inline-flex; align-items:center; gap:5px; transition:all 0.3s ease;">🟢 Bağlı</span>
+                <button class="btn-danger" onclick="logout()" style="font-size:0.85rem; padding:8px 14px; min-height:36px;">Güvenli Çıkış</button>
+            </div>
         </div>
         
         <div class="tab-container">
@@ -833,20 +836,64 @@
 </div>
 
 <script>
-    // --- NÜMERİK ŞİFRE AYARI ---
-    const PAGE_PASSWORD = "8426"; 
+    // --- GÜVENLİ ŞİFRELEME VE OTURUM YÖNETİMİ (SALTED SHA-256) ---
+    const PASSWORD_SALT = "GURKAN_TAKIP_SALT_2026";
+    // Salted SHA-256 Kriptografik Şifre Karması (Açık metin şifre barındırmaz)
+    const DEFAULT_PASSWORD_HASH = "59aa4ba4d90ec6947b342d538221c12df6ae3fd8df8a22e7626aad19e7d6c91a";
 
-    function checkPassword() {
-        const inputVal = document.getElementById('passwordInput').value.trim();
-        if (inputVal === PAGE_PASSWORD) {
+    let failedAttempts = 0;
+    let lockoutTime = 0;
+
+    async function hashPassword(plainText) {
+        if (!plainText) return "";
+        const encoder = new TextEncoder();
+        const data = encoder.encode(plainText.trim() + "_" + PASSWORD_SALT);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function checkPassword() {
+        const errorEl = document.getElementById('errorText');
+        const passInput = document.getElementById('passwordInput');
+        const inputVal = passInput.value.trim();
+
+        const now = Date.now();
+        if (now < lockoutTime) {
+            const remainingSec = Math.ceil((lockoutTime - now) / 1000);
+            errorEl.style.display = 'block';
+            errorEl.innerText = `Çok sayıda hatalı giriş! Lütfen ${remainingSec} saniye bekleyiniz.`;
+            return;
+        }
+
+        if (!inputVal) {
+            errorEl.style.display = 'block';
+            errorEl.innerText = 'Lütfen şifrenizi giriniz!';
+            return;
+        }
+
+        const inputHash = await hashPassword(inputVal);
+        const storedHash = await DataService.getPasswordHash();
+
+        if (inputHash === storedHash) {
+            failedAttempts = 0;
             sessionStorage.setItem('isLogged', 'true');
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('appContent').style.display = 'block';
-            document.getElementById('errorText').style.display = 'none';
+            errorEl.style.display = 'none';
+            passInput.value = '';
         } else {
-            document.getElementById('errorText').style.display = 'block';
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('passwordInput').focus();
+            failedAttempts++;
+            if (failedAttempts >= 5) {
+                lockoutTime = Date.now() + 30000; // 30 saniye kilitlenme
+                errorEl.style.display = 'block';
+                errorEl.innerText = '5 kez hatalı şifre girildi! Güvenlik nedeniyle 30 saniye kilitlendi.';
+            } else {
+                errorEl.style.display = 'block';
+                errorEl.innerText = `Hatalı şifre girdiniz! (Kalan Hak: ${5 - failedAttempts})`;
+            }
+            passInput.value = '';
+            passInput.focus();
         }
     }
 
@@ -859,7 +906,7 @@
         location.reload(); 
     }
 
-    // --- SUPABASE VE VERİ KATMANI SOYUTLAMA ---
+    // --- SUPABASE VE ÇİFT KATMANLI DİRENÇLİ DEPOLAMA KATMANI ---
     const SUPABASE_URL = "https://raytnnezrlukksardpth.supabase.co";
     const SUPABASE_KEY = "sb_publishable_xwyq-p6d46CcphasB3ETHQ_gnYQM0MR";
 
@@ -880,15 +927,65 @@
         }
     }
 
+    function updateDbStatusBadge(status) {
+        const badge = document.getElementById('dbStatusBadge');
+        if (!badge) return;
+        if (status === 'online') {
+            badge.style.background = 'rgba(22, 101, 52, 0.35)';
+            badge.style.color = '#86efac';
+            badge.style.border = '1px solid rgba(34, 197, 94, 0.4)';
+            badge.innerHTML = '🟢 Bağlı';
+        } else if (status === 'local') {
+            badge.style.background = 'rgba(217, 119, 6, 0.35)';
+            badge.style.color = '#fde68a';
+            badge.style.border = '1px solid rgba(245, 158, 11, 0.4)';
+            badge.innerHTML = '🟠 Çevrimdışı';
+        } else {
+            badge.style.background = 'rgba(148, 163, 184, 0.25)';
+            badge.style.color = '#cbd5e1';
+            badge.style.border = '1px solid rgba(148, 163, 184, 0.3)';
+            badge.innerHTML = '⏳ Bağlanıyor...';
+        }
+    }
+
     const DataService = {
+        async getPasswordHash() {
+            let localHash = localStorage.getItem('app_password_hash');
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('app_settings').select('value').eq('key', 'password_hash').maybeSingle();
+                    if (!error && data && data.value) {
+                        localStorage.setItem('app_password_hash', data.value);
+                        return data.value;
+                    }
+                } catch (err) { console.error('Supabase getPasswordHash hatasi:', err); }
+            }
+            return localHash || DEFAULT_PASSWORD_HASH;
+        },
+        async savePasswordHash(hashStr) {
+            localStorage.setItem('app_password_hash', hashStr);
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('app_settings').upsert({ key: 'password_hash', value: hashStr, updated_at: new Date().toISOString() });
+                } catch (err) { console.error('Supabase savePasswordHash hatasi:', err); }
+            }
+        },
         async getCompanies() {
+            let local = JSON.parse(localStorage.getItem('companiesList')) || defaultCompanies;
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient.from('companies').select('name').order('id', { ascending: true });
-                    if (!error && data && data.length > 0) return data.map(d => d.name);
-                } catch (err) { console.error(err); }
+                    if (!error && data && data.length > 0) {
+                        const dbList = data.map(d => d.name);
+                        const merged = Array.from(new Set([...local, ...dbList]));
+                        localStorage.setItem('companiesList', JSON.stringify(merged));
+                        updateDbStatusBadge('online');
+                        return merged;
+                    }
+                } catch (err) { console.error('getCompanies hatasi:', err); }
             }
-            return JSON.parse(localStorage.getItem('companiesList')) || defaultCompanies;
+            updateDbStatusBadge('local');
+            return local;
         },
         async saveCompanies(list) {
             localStorage.setItem('companiesList', JSON.stringify(list));
@@ -897,17 +994,25 @@
                     for (const name of list) {
                         await supabaseClient.from('companies').upsert({ name }, { onConflict: 'name' });
                     }
-                } catch (err) { console.error(err); }
+                } catch (err) { console.error('saveCompanies hatasi:', err); }
             }
         },
         async getMachines() {
+            let local = JSON.parse(localStorage.getItem('machinesList')) || defaultMachines;
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient.from('machines').select('name').order('id', { ascending: true });
-                    if (!error && data && data.length > 0) return data.map(d => d.name);
-                } catch (err) { console.error(err); }
+                    if (!error && data && data.length > 0) {
+                        const dbList = data.map(d => d.name);
+                        const merged = Array.from(new Set([...local, ...dbList]));
+                        localStorage.setItem('machinesList', JSON.stringify(merged));
+                        updateDbStatusBadge('online');
+                        return merged;
+                    }
+                } catch (err) { console.error('getMachines hatasi:', err); }
             }
-            return JSON.parse(localStorage.getItem('machinesList')) || defaultMachines;
+            updateDbStatusBadge('local');
+            return local;
         },
         async saveMachines(list) {
             localStorage.setItem('machinesList', JSON.stringify(list));
@@ -916,17 +1021,25 @@
                     for (const name of list) {
                         await supabaseClient.from('machines').upsert({ name }, { onConflict: 'name' });
                     }
-                } catch (err) { console.error(err); }
+                } catch (err) { console.error('saveMachines hatasi:', err); }
             }
         },
         async getOperators() {
+            let local = JSON.parse(localStorage.getItem('operatorsList')) || defaultOperators;
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient.from('operators').select('name').order('id', { ascending: true });
-                    if (!error && data && data.length > 0) return data.map(d => d.name);
-                } catch (err) { console.error(err); }
+                    if (!error && data && data.length > 0) {
+                        const dbList = data.map(d => d.name);
+                        const merged = Array.from(new Set([...local, ...dbList]));
+                        localStorage.setItem('operatorsList', JSON.stringify(merged));
+                        updateDbStatusBadge('online');
+                        return merged;
+                    }
+                } catch (err) { console.error('getOperators hatasi:', err); }
             }
-            return JSON.parse(localStorage.getItem('operatorsList')) || defaultOperators;
+            updateDbStatusBadge('local');
+            return local;
         },
         async saveOperators(list) {
             localStorage.setItem('operatorsList', JSON.stringify(list));
@@ -935,15 +1048,16 @@
                     for (const name of list) {
                         await supabaseClient.from('operators').upsert({ name }, { onConflict: 'name' });
                     }
-                } catch (err) { console.error(err); }
+                } catch (err) { console.error('saveOperators hatasi:', err); }
             }
         },
         async getRecords() {
+            let localRecords = JSON.parse(localStorage.getItem('machineRecords')) || [];
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient.from('work_records').select('*').order('start_time_iso', { ascending: false });
                     if (!error && data) {
-                        return data.map(r => ({
+                        const dbRecords = data.map(r => ({
                             id: Number(r.id),
                             companyName: r.company_name,
                             machineName: r.machine_name,
@@ -957,10 +1071,22 @@
                             totalAmount: String(r.total_amount),
                             extraNote: r.extra_note || r.extraNote || ''
                         }));
+
+                        const recMap = new Map();
+                        localRecords.forEach(r => recMap.set(r.id, r));
+                        dbRecords.forEach(r => recMap.set(r.id, r));
+
+                        const merged = Array.from(recMap.values());
+                        localStorage.setItem('machineRecords', JSON.stringify(merged));
+                        updateDbStatusBadge('online');
+                        return merged;
+                    } else if (error) {
+                        console.warn('Supabase getRecords uyarisi, yerel depolama verisi kullaniliyor:', error);
                     }
-                } catch (err) { console.error(err); }
+                } catch (err) { console.error('getRecords hatasi:', err); }
             }
-            return JSON.parse(localStorage.getItem('machineRecords')) || [];
+            updateDbStatusBadge('local');
+            return localRecords;
         },
         async addRecord(record) {
             let localRecords = JSON.parse(localStorage.getItem('machineRecords')) || [];
@@ -969,7 +1095,7 @@
 
             if (supabaseClient) {
                 try {
-                    await supabaseClient.from('work_records').insert([{
+                    const payload = {
                         id: record.id,
                         company_name: record.companyName,
                         machine_name: record.machineName,
@@ -981,9 +1107,18 @@
                         formatted_end: record.formattedEnd,
                         duration_hours: record.durationHours,
                         total_amount: record.totalAmount,
-                        extra_note: record.extraNote || ''
-                    }]);
-                } catch (err) { console.error(err); }
+                        extra_note: record.extraNote || record.extra_note || ''
+                    };
+                    const { error } = await supabaseClient.from('work_records').insert([payload]);
+                    if (error) {
+                        console.error('Supabase addRecord hatasi:', error);
+                        // Eğer Supabase tablosunda extra_note sütunu tanımlı değilse, extra_note olmadan tekrar dene
+                        if (error.message && (error.message.includes('extra_note') || error.code === 'PGRST204')) {
+                            delete payload.extra_note;
+                            await supabaseClient.from('work_records').insert([payload]);
+                        }
+                    }
+                } catch (err) { console.error('addRecord istisnasi:', err); }
             }
         },
         async updateRecord(record) {
@@ -994,7 +1129,7 @@
 
             if (supabaseClient) {
                 try {
-                    await supabaseClient.from('work_records').update({
+                    const payload = {
                         company_name: record.companyName,
                         machine_name: record.machineName,
                         operator: record.operator,
@@ -1005,9 +1140,17 @@
                         formatted_end: record.formattedEnd,
                         duration_hours: record.durationHours,
                         total_amount: record.totalAmount,
-                        extra_note: record.extraNote || ''
-                    }).eq('id', record.id);
-                } catch (err) { console.error(err); }
+                        extra_note: record.extraNote || record.extra_note || ''
+                    };
+                    const { error } = await supabaseClient.from('work_records').update(payload).eq('id', record.id);
+                    if (error) {
+                        console.error('Supabase updateRecord hatasi:', error);
+                        if (error.message && (error.message.includes('extra_note') || error.code === 'PGRST204')) {
+                            delete payload.extra_note;
+                            await supabaseClient.from('work_records').update(payload).eq('id', record.id);
+                        }
+                    }
+                } catch (err) { console.error('updateRecord istisnasi:', err); }
             }
         },
         async deleteRecord(id) {
@@ -1017,26 +1160,40 @@
 
             if (supabaseClient) {
                 try {
-                    await supabaseClient.from('work_records').delete().eq('id', id);
-                } catch (err) { console.error(err); }
+                    const { error } = await supabaseClient.from('work_records').delete().eq('id', id);
+                    if (error) console.error('Supabase deleteRecord hatasi:', error);
+                } catch (err) { console.error('deleteRecord istisnasi:', err); }
             }
         },
         async getPayments() {
+            let localPayments = JSON.parse(localStorage.getItem('companyPayments')) || [];
             if (supabaseClient) {
                 try {
                     const { data, error } = await supabaseClient.from('payments').select('*').order('created_at', { ascending: true });
                     if (!error && data) {
-                        return data.map(p => ({
+                        const dbPayments = data.map(p => ({
                             id: Number(p.id),
                             companyName: p.company_name,
                             amount: String(p.amount),
                             date: p.payment_date,
                             note: p.note
                         }));
+
+                        const payMap = new Map();
+                        localPayments.forEach(p => payMap.set(p.id, p));
+                        dbPayments.forEach(p => payMap.set(p.id, p));
+
+                        const merged = Array.from(payMap.values());
+                        localStorage.setItem('companyPayments', JSON.stringify(merged));
+                        updateDbStatusBadge('online');
+                        return merged;
+                    } else if (error) {
+                        console.warn('Supabase getPayments uyarisi, yerel depolama verisi kullaniliyor:', error);
                     }
-                } catch (err) { console.error(err); }
+                } catch (err) { console.error('getPayments hatasi:', err); }
             }
-            return JSON.parse(localStorage.getItem('companyPayments')) || [];
+            updateDbStatusBadge('local');
+            return localPayments;
         },
         async addPayment(payment) {
             let localPayments = JSON.parse(localStorage.getItem('companyPayments')) || [];
@@ -1045,14 +1202,15 @@
 
             if (supabaseClient) {
                 try {
-                    await supabaseClient.from('payments').insert([{
+                    const { error } = await supabaseClient.from('payments').insert([{
                         id: payment.id,
                         company_name: payment.companyName,
                         amount: payment.amount,
                         payment_date: payment.date,
                         note: payment.note
                     }]);
-                } catch (err) { console.error(err); }
+                    if (error) console.error('Supabase addPayment hatasi:', error);
+                } catch (err) { console.error('addPayment istisnasi:', err); }
             }
         },
         async deletePayment(id) {
@@ -1062,8 +1220,9 @@
 
             if (supabaseClient) {
                 try {
-                    await supabaseClient.from('payments').delete().eq('id', id);
-                } catch (err) { console.error(err); }
+                    const { error } = await supabaseClient.from('payments').delete().eq('id', id);
+                    if (error) console.error('Supabase deletePayment hatasi:', error);
+                } catch (err) { console.error('deletePayment istisnasi:', err); }
             }
         },
         async deleteOptionFromList(type, itemToDelete) {
@@ -1071,7 +1230,7 @@
                 try {
                     let table = type === 'machine' ? 'machines' : (type === 'operator' ? 'operators' : 'companies');
                     await supabaseClient.from(table).delete().eq('name', itemToDelete);
-                } catch (err) { console.error(err); }
+                } catch (err) { console.error('deleteOptionFromList hatasi:', err); }
             }
         }
     };
@@ -1318,8 +1477,9 @@
         const rate = parseFloat(document.getElementById('hourlyRate').value);
         const formatOptions = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
 
+        const noteInputVal = document.getElementById('extraNote').value.trim();
         const hasExtraNote = document.getElementById('enableExtraNote').checked;
-        const noteText = hasExtraNote ? document.getElementById('extraNote').value.trim() : '';
+        const noteText = noteInputVal || (hasExtraNote ? document.getElementById('extraNote').value.trim() : '');
 
         const newRec = {
             id: Date.now(),

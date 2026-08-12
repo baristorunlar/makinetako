@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.work_records (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Hali hazırda kurulmuş veritabanı tablonuza Ek Not sütununu eklemek için aşağıdaki SQL komutunu çalıştırabilirsiniz:
+-- Ek Not sütununun mevcut tablolarda varlığından emin olma
 ALTER TABLE public.work_records ADD COLUMN IF NOT EXISTS extra_note TEXT DEFAULT '';
 
 -- 5. TAHSİLAT / ÖDEME KAYITLARI TABLOSU
@@ -54,24 +54,34 @@ CREATE TABLE IF NOT EXISTS public.payments (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 6. SİSTEM AYARLARI VE ŞİFRE KARMASI TABLOSU
+CREATE TABLE IF NOT EXISTS public.app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ROW LEVEL SECURITY (RLS) POLİTİKALARI
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.machines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.operators ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.work_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Anon Access Companies" ON public.companies;
 DROP POLICY IF EXISTS "Anon Access Machines" ON public.machines;
 DROP POLICY IF EXISTS "Anon Access Operators" ON public.operators;
 DROP POLICY IF EXISTS "Anon Access Work Records" ON public.work_records;
 DROP POLICY IF EXISTS "Anon Access Payments" ON public.payments;
+DROP POLICY IF EXISTS "Anon Access App Settings" ON public.app_settings;
 
 CREATE POLICY "Anon Access Companies" ON public.companies FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Anon Access Machines" ON public.machines FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Anon Access Operators" ON public.operators FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Anon Access Work Records" ON public.work_records FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Anon Access Payments" ON public.payments FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Anon Access App Settings" ON public.app_settings FOR ALL USING (true) WITH CHECK (true);
 
 -- VARSAYILAN BAŞLANGIÇ VERİLERİ
 INSERT INTO public.companies (name) VALUES ('ABC İnşaat A.Ş.'), ('Örnek Hafriyat') ON CONFLICT (name) DO NOTHING;
