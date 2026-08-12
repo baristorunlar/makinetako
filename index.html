@@ -1133,8 +1133,21 @@
                         }));
 
                         const recMap = new Map();
-                        localRecords.forEach(r => recMap.set(r.id, r));
-                        dbRecords.forEach(r => recMap.set(r.id, r));
+                        localRecords.forEach(r => recMap.set(r.id, {
+                            ...r,
+                            extraNote: r.extraNote || r.extra_note || ''
+                        }));
+                        dbRecords.forEach(dbR => {
+                            const existing = recMap.get(dbR.id);
+                            const existingNote = existing ? (existing.extraNote || existing.extra_note || '') : '';
+                            const dbNote = dbR.extraNote || dbR.extra_note || '';
+                            const noteToUse = dbNote || existingNote;
+                            recMap.set(dbR.id, {
+                                ...(existing || {}),
+                                ...dbR,
+                                extraNote: noteToUse
+                            });
+                        });
 
                         const merged = Array.from(recMap.values());
                         localStorage.setItem('machineRecords', JSON.stringify(merged));
@@ -1625,7 +1638,8 @@
             tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">Sistemde kayıtlı veri bulunmamaktadır.</td></tr>';
         } else {
             paginatedRecords.forEach((r) => {
-                const noteBadge = r.extraNote ? `<br><span style="font-size:0.78rem; color:#1e3a8a; background:#e0e7ff; padding:2px 6px; border-radius:3px; display:inline-block; margin-top:3px;">📝 ${r.extraNote}</span>` : '';
+                const noteVal = r.extraNote || r.extra_note || '';
+                const noteBadge = noteVal ? `<br><span style="font-size:0.78rem; color:#1e3a8a; background:#e0e7ff; padding:2px 6px; border-radius:3px; display:inline-block; margin-top:3px;">📝 ${noteVal}</span>` : '';
                 tbody.innerHTML += `<tr>
                     <td><strong>${r.companyName}</strong></td>
                     <td>${r.machineName}${noteBadge}</td>
