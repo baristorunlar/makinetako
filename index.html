@@ -1011,42 +1011,98 @@
                 } catch (err) { console.error('saveCompanies hatasi:', err); }
             }
         },
-        async getMachines() {
-            let localRaw = localStorage.getItem('machinesList');
-            let local = localRaw !== null ? JSON.parse(localRaw) : null;
+        async renameCompany(oldName, newName) {
+            if (!oldName || !newName || oldName === newName) return;
+            const idx = savedCompanies.indexOf(oldName);
+            if (idx !== -1) savedCompanies[idx] = newName;
+            await this.saveCompanies(savedCompanies);
+
             if (supabaseClient) {
                 try {
-                    const { data, error } = await supabaseClient.from('machines').select('name').order('id', { ascending: true });
-                    if (!error && data) {
-                        const dbList = data.map(d => d.name);
-                        if (dbList.length > 0) {
-                            localStorage.setItem('machinesList', JSON.stringify(dbList));
-                            updateDbStatusBadge('online');
-                            return dbList;
-                        } else if (local !== null) {
-                            await this.saveMachines(local);
-                            updateDbStatusBadge('online');
-                            return local;
-                        }
+                    await supabaseClient.from('companies').update({ name: newName }).eq('name', oldName);
+                } catch (e) { console.error('Supabase rename company:', e); }
+            }
+
+            records.forEach(r => {
+                if (r.companyName === oldName) r.companyName = newName;
+            });
+            localStorage.setItem('machineRecords', JSON.stringify(records));
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('work_records').update({ company_name: newName }).eq('company_name', oldName);
+                } catch (e) { console.error('Supabase update work_records company:', e); }
+            }
+
+            payments.forEach(p => {
+                if (p.companyName === oldName) p.companyName = newName;
+            });
+            localStorage.setItem('companyPayments', JSON.stringify(payments));
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('payments').update({ company_name: newName }).eq('company_name', oldName);
+                } catch (e) { console.error('Supabase update payments company:', e); }
+            }
+
+            renderSelects();
+            renderTable();
+        },
+        async getMachines() {
+            let localRaw = localStorage.getItem('machinesData');
+            if (!localRaw) localRaw = localStorage.getItem('machinesList');
+            let local = localRaw !== null ? JSON.parse(localRaw) : null;
+
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient.from('machines').select('*').order('id', { ascending: true });
+                    if (!error && data && data.length > 0) {
+                        const dbList = data.map(d => ({
+                            name: d.name,
+                            defaultRate: d.default_rate ? Number(d.default_rate) : 0,
+                            defaultOperator: d.default_operator || ''
+                        }));
+                        localStorage.setItem('machinesData', JSON.stringify(dbList));
+                        localStorage.setItem('machinesList', JSON.stringify(dbList.map(m => m.name)));
+                        updateDbStatusBadge('online');
+                        return dbList;
+                    } else if (!error && local !== null) {
+                        await this.saveMachines(local);
+                        updateDbStatusBadge('online');
+                        return local;
                     }
                 } catch (err) { console.error('getMachines hatasi:', err); }
             }
             if (local !== null) {
                 updateDbStatusBadge('local');
-                return local;
+                const norm = local.map(m => typeof m === 'string' ? { name: m, defaultRate: 0, defaultOperator: '' } : m);
+                return norm;
             }
-            localStorage.setItem('machinesList', JSON.stringify(defaultMachines));
+            const defaults = defaultMachines.map(m => ({ name: m, defaultRate: 0, defaultOperator: '' }));
+            localStorage.setItem('machinesData', JSON.stringify(defaults));
+            localStorage.setItem('machinesList', JSON.stringify(defaults.map(m => m.name)));
             updateDbStatusBadge('local');
-            return defaultMachines;
+            return defaults;
         },
         async saveMachines(list) {
             if (!Array.isArray(list)) return;
-            localStorage.setItem('machinesList', JSON.stringify(list));
+            const normalized = list.map(m => typeof m === 'string' ? { name: m, defaultRate: 0, defaultOperator: '' } : m);
+            localStorage.setItem('machinesData', JSON.stringify(normalized));
+            localStorage.setItem('machinesList', JSON.stringify(normalized.map(m => m.name)));
+
             if (supabaseClient) {
                 try {
-                    for (const name of list) {
-                        if (name && name.trim()) {
-                            await supabaseClient.from('machines').upsert({ name: name.trim() }, { onConflict: 'name' });
+                    for (const m of normalized) {
+                        if (m.name && m.name.trim()) {
+                            const payload = {
+                                name: m.name.trim(),
+                                default_rate: m.defaultRate ? Number(m.defaultRate) : 0,
+                                default_operator: m.defaultOperator || ''
+                            };
+                            const { error } = await supabaseClient.from('machines').upsert(payload, { onConflict: 'name' });
+                            if (error && (error.message.includes('default_rate') || error.code === 'PGRST204')) {
+                                delete payload.default_rate;
+                                delete payload.default_operator;
+                                await supabaseClient.from('machines').upsert(payload, { onConflict: 'name' });
+                            }
                         }
                     }
                 } catch (err) { console.error('saveMachines hatasi:', err); }
@@ -1374,15 +1430,41 @@
         btnsEl.innerHTML = btnHtml;
     }
 
-    async function loadAllData() {
-        savedCompanies = await DataService.getCompanies();
-        savedMachines = await DataService.getMachines();
-        savedOperators = await DataService.getOperators();
-        records = await DataService.getRecords();
-        payments = await DataService.getPayments();
-        
-        renderSelects();
-        renderTable();
+    let lastCompaniesStr = '';
+    let lastMachinesStr = '';
+    let lastOperatorsStr = '';
+    let lastRecordsStr = '';
+    let lastPaymentsStr = '';
+
+    let machinesData = [];
+
+    async function loadAllData(isBackground = false) {
+        const newCompanies = await DataService.getCompanies();
+        const newMachines = await DataService.getMachines();
+        const newOperators = await DataService.getOperators();
+        const newRecords = await DataService.getRecords();
+        const newPayments = await DataService.getPayments();
+
+        machinesData = newMachines;
+        const mappedMachines = newMachines.map(m => typeof m === 'object' ? m.name : m);
+
+        const compStr = JSON.stringify(newCompanies);
+        const machStr = JSON.stringify(mappedMachines);
+        const opStr = JSON.stringify(newOperators);
+        const recStr = JSON.stringify(newRecords);
+        const payStr = JSON.stringify(newPayments);
+
+        let dataChanged = false;
+        if (compStr !== lastCompaniesStr) { savedCompanies = newCompanies; lastCompaniesStr = compStr; dataChanged = true; }
+        if (machStr !== lastMachinesStr) { savedMachines = mappedMachines; lastMachinesStr = machStr; dataChanged = true; }
+        if (opStr !== lastOperatorsStr) { savedOperators = newOperators; lastOperatorsStr = opStr; dataChanged = true; }
+        if (recStr !== lastRecordsStr) { records = newRecords; lastRecordsStr = recStr; dataChanged = true; }
+        if (payStr !== lastPaymentsStr) { payments = newPayments; lastPaymentsStr = payStr; dataChanged = true; }
+
+        if (!isBackground || dataChanged) {
+            renderSelects();
+            renderTable();
+        }
     }
 
     let syncInterval = null;
@@ -1392,20 +1474,19 @@
                 supabaseClient
                     .channel('realtime-multi-device-sync')
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'work_records' }, async () => {
-                        console.log('Realtime veritabanı değişikliği algılandı...');
-                        await loadAllData();
+                        await loadAllData(true);
                     })
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, async () => {
-                        await loadAllData();
+                        await loadAllData(true);
                     })
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, async () => {
-                        await loadAllData();
+                        await loadAllData(true);
                     })
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'machines' }, async () => {
-                        await loadAllData();
+                        await loadAllData(true);
                     })
                     .on('postgres_changes', { event: '*', schema: 'public', table: 'operators' }, async () => {
-                        await loadAllData();
+                        await loadAllData(true);
                     })
                     .subscribe();
             } catch (err) {
@@ -1415,10 +1496,61 @@
         if (!syncInterval) {
             syncInterval = setInterval(async () => {
                 if (sessionStorage.getItem('isLogged') === 'true') {
-                    await loadAllData();
+                    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                    if (activeTag === 'input' || activeTag === 'select' || activeTag === 'textarea') {
+                        return;
+                    }
+                    await loadAllData(true);
                 }
-            }, 5000); // Tüm cihazlar arasında her 5 saniyede bir verileri canlı olarak eşitle
+            }, 15000);
         }
+    }
+
+    function formatDatetimeLocal(dateObj) {
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    function initDefaultDateInputs() {
+        const now = new Date();
+        const nowFormatted = formatDatetimeLocal(now);
+        
+        const startEl = document.getElementById('startTime');
+        if (startEl && !startEl.value) {
+            startEl.value = nowFormatted;
+        }
+
+        const endEl = document.getElementById('endTime');
+        if (endEl && !endEl.value) {
+            endEl.value = nowFormatted;
+        }
+
+        const payEl = document.getElementById('paymentDate');
+        if (payEl) {
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            payEl.value = `${year}-${month}-${day}`;
+        }
+
+        calculateLive();
+    }
+
+    function resetWorkFormDates() {
+        const now = new Date();
+        const nowFormatted = formatDatetimeLocal(now);
+        
+        const startEl = document.getElementById('startTime');
+        if (startEl) startEl.value = nowFormatted;
+        
+        const endEl = document.getElementById('endTime');
+        if (endEl) endEl.value = nowFormatted;
+        
+        calculateLive();
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -1431,7 +1563,12 @@
         }
         await loadAllData();
         setupRealtimeSync();
-        document.getElementById('paymentDate').valueAsDate = new Date();
+        initDefaultDateInputs();
+        
+        const mSelect = document.getElementById('machineName');
+        if (mSelect) {
+            mSelect.addEventListener('change', onMachineSelectChange);
+        }
     });
 
     function switchTab(tabId) {
@@ -1443,14 +1580,50 @@
         buttons[1].classList.toggle('active', tabId === 'paymentTab');
     }
 
-    // --- AÇILIR MENÜLERİ (SELECT) GÜNCELLEME ---
+    // --- MAKİNE SEÇİLDİĞİNDE VARSAYILAN SAAT ÜCRETİ VE OPERATÖRÜ OTOMATİK DOLDURMA ---
+    function onMachineSelectChange() {
+        const mSelect = document.getElementById('machineName');
+        if (!mSelect) return;
+        const selName = mSelect.value;
+        if (!selName) return;
+
+        const mObj = machinesData.find(m => (typeof m === 'object' ? m.name : m) === selName);
+        if (mObj && typeof mObj === 'object') {
+            if (mObj.defaultRate && Number(mObj.defaultRate) > 0) {
+                document.getElementById('hourlyRate').value = mObj.defaultRate;
+                calculateLive();
+            }
+            if (mObj.defaultOperator && savedOperators.includes(mObj.defaultOperator)) {
+                document.getElementById('operator').value = mObj.defaultOperator;
+            }
+        }
+    }
+
+    // --- AÇILIR MENÜLERİ (SELECT) KORUMALI GÜNCELLEME ---
+    function updateSelectElement(elementId, list) {
+        const el = document.getElementById(elementId);
+        if (!el || !Array.isArray(list)) return;
+
+        const currentVal = el.value;
+        const currentActive = document.activeElement === el;
+        if (currentActive) return;
+
+        const newHtml = list.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        if (el.innerHTML !== newHtml) {
+            el.innerHTML = newHtml;
+            if (currentVal && list.includes(currentVal)) {
+                el.value = currentVal;
+            }
+        }
+    }
+
     function renderSelects() {
-        const compHtml = savedCompanies.map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('companyName').innerHTML = compHtml;
-        document.getElementById('paymentCompany').innerHTML = compHtml;
-        
-        document.getElementById('machineName').innerHTML = savedMachines.map(m => `<option value="${m}">${m}</option>`).join('');
-        document.getElementById('operator').innerHTML = savedOperators.map(o => `<option value="${o}">${o}</option>`).join('');
+        updateSelectElement('companyName', savedCompanies);
+        updateSelectElement('paymentCompany', savedCompanies);
+        updateSelectElement('machineName', savedMachines);
+        updateSelectElement('operator', savedOperators);
+        onMachineSelectChange();
     }
 
     // --- YENİ VERİ EKLEME (FİRMA, MAKİNE, OPERATÖR) ---
@@ -1465,13 +1638,41 @@
     }
 
     async function addMachine() {
-        const name = prompt("Sisteme eklenecek makine veya plaka bilgisini giriniz:");
-        if (name && name.trim() && !savedMachines.includes(name.trim())) {
-            savedMachines.push(name.trim());
-            await DataService.saveMachines(savedMachines);
-            renderSelects();
-            document.getElementById('machineName').value = name.trim();
+        const name = prompt("Sisteme eklenecek makine veya plaka adını giriniz:");
+        if (!name || !name.trim()) return;
+        const trimmed = name.trim();
+        
+        const existingNames = machinesData.map(m => typeof m === 'object' ? m.name : m);
+        if (existingNames.includes(trimmed)) return alert("Bu isimde bir makine zaten mevcut!");
+
+        const rateStr = prompt(`"${trimmed}" için varsayılan birim saat ücretini giriniz (istiyorsanız):`, "0");
+        const rateVal = parseFloat(rateStr) || 0;
+
+        let opVal = "";
+        if (savedOperators.length > 0) {
+            const opSelectPrompt = prompt(`"${trimmed}" için varsayılan operatör seçiniz:\nMevcut Operatörler:\n` + savedOperators.map((o, idx) => `${idx + 1}. ${o}`).join('\n') + `\n\n(Lütfen operatörün sıra numarasını veya adını giriniz, istemiyorsanız boş bırakınız):`);
+            if (opSelectPrompt && opSelectPrompt.trim()) {
+                const pVal = opSelectPrompt.trim();
+                const num = parseInt(pVal, 10);
+                if (!isNaN(num) && num >= 1 && num <= savedOperators.length) {
+                    opVal = savedOperators[num - 1];
+                } else if (savedOperators.includes(pVal)) {
+                    opVal = pVal;
+                }
+            }
         }
+
+        machinesData.push({
+            name: trimmed,
+            defaultRate: rateVal,
+            defaultOperator: opVal
+        });
+
+        await DataService.saveMachines(machinesData);
+        savedMachines = machinesData.map(m => typeof m === 'object' ? m.name : m);
+        renderSelects();
+        document.getElementById('machineName').value = trimmed;
+        onMachineSelectChange();
     }
 
     async function addOperator() {
@@ -1502,21 +1703,11 @@
     
     document.getElementById('hourlyRate').addEventListener('input', calculateLive);
     
-    // --- BAŞLANGIÇ TARİHİ DEĞİŞTİĞİNDE BİTİŞ TARİHİNİ OTOMATİK EŞİTLEME ---
+    // --- BAŞLANGIÇ TARİHİ/SAATİ DEĞİŞTİĞİNDE BİTİŞ TARİHİ VE SAATİNİ BİREBİR EŞİTLEME ---
     document.getElementById('startTime').addEventListener('input', function() {
         const startVal = this.value;
-        if (startVal && startVal.includes('T')) {
-            const startDatePart = startVal.split('T')[0];
-            const endEl = document.getElementById('endTime');
-            const endVal = endEl.value;
-            if (endVal && endVal.includes('T')) {
-                const endTimePart = endVal.split('T')[1];
-                endEl.value = `${startDatePart}T${endTimePart}`;
-            } else {
-                // Bitiş saati henüz seçilmediyse başlangıç saati ile aynı tarihi varsayılan olarak ata
-                const startTimePart = startVal.split('T')[1] || "17:00";
-                endEl.value = `${startDatePart}T${startTimePart}`;
-            }
+        if (startVal) {
+            document.getElementById('endTime').value = startVal;
         }
         calculateLive();
     });
@@ -1547,6 +1738,63 @@
         if (!isChecked) {
             document.getElementById('extraNote').value = '';
         }
+    }
+
+    // --- CANLI SİSTEM BİLDİRİM (TOAST) FONKSİYONU ---
+    function showToast(msg, type = 'success') {
+        let toastBox = document.getElementById('systemToastBox');
+        if (!toastBox) {
+            toastBox = document.createElement('div');
+            toastBox.id = 'systemToastBox';
+            toastBox.style.cssText = `
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                z-index: 99999;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                pointer-events: none;
+            `;
+            document.body.appendChild(toastBox);
+        }
+
+        const toast = document.createElement('div');
+        const isSuccess = type === 'success';
+        const bg = isSuccess ? '#166534' : '#991b1b';
+        const icon = isSuccess ? '✅' : '🗑️';
+        
+        toast.style.cssText = `
+            background: ${bg};
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            font-size: 0.92rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+        `;
+        toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+        toastBox.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        }, 10);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 300);
+        }, 3000);
     }
 
     // --- FORM GÖNDERME İŞLEMLERİ ---
@@ -1583,12 +1831,11 @@
         records.push(newRec);
         await DataService.addRecord(newRec);
         renderTable();
-        document.getElementById('startTime').value = '';
-        document.getElementById('endTime').value = '';
+        resetWorkFormDates();
         document.getElementById('enableExtraNote').checked = false;
         document.getElementById('extraNote').value = '';
         document.getElementById('extraNoteBox').style.display = 'none';
-        calculateLive();
+        showToast("Mesai Kaydı Başarıyla İşlendi!");
     });
 
     document.getElementById('paymentForm').addEventListener('submit', async function(e) {
@@ -1606,6 +1853,7 @@
         renderTable();
         document.getElementById('paymentAmount').value = '';
         document.getElementById('paymentNote').value = '';
+        showToast("Tahsilat Kaydı Başarıyla İşlendi!");
     });
 
     // --- TABLO VE ÖZET RENDER İŞLEMİ ---
@@ -2127,6 +2375,7 @@
             await DataService.deleteRecord(id); 
             renderTable(); 
             closeModal(); 
+            showToast("Kayıt Başarıyla Silindi!", "danger");
         } 
     }
     
@@ -2136,46 +2385,135 @@
             await DataService.deletePayment(id); 
             renderTable(); 
             closeModal(); 
+            showToast("Tahsilat Kaydı Başarıyla Silindi!", "danger");
         } 
     }
 
     // --- LİSTE YÖNETİMİ (FİRMA, MAKİNE, OPERATÖR) ---
     function openManager(type) {
         currentManageType = type;
-        
-        let title = '';
-        let list = [];
-        
-        if (type === 'machine') {
-            title = 'Makine/Plaka Listesi Yönetimi';
-            list = savedMachines;
+        document.getElementById('modalTitle').innerText = 
+            type === 'machine' ? 'Makine & Plaka Listesi ve Varsayılan Tanımları' :
+            (type === 'operator' ? 'Personel Listesi Yönetimi' : 'Firma / Müşteri Listesi Yönetimi');
+
+        let html = '';
+
+        if (type === 'company') {
+            html += '<div style="margin-bottom:12px;"><button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="addCompany()">+ Yeni Firma Ekle</button></div>';
+            html += '<ul class="manage-list">';
+            savedCompanies.forEach((comp, i) => {
+                const safeComp = comp.replace(/'/g, "\\'");
+                html += `<li style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #cbd5e1;">
+                    <span style="font-weight:600; color:var(--primary);">${comp}</span>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-primary" style="padding:4px 8px; font-size:0.8rem;" onclick="editCompany('${safeComp}')">✎ Düzenle</button>
+                        <button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteOption(${i})">Sil</button>
+                    </div>
+                </li>`;
+            });
+            html += '</ul>';
         } else if (type === 'operator') {
-            title = 'Personel Listesi Yönetimi';
-            list = savedOperators;
-        } else if (type === 'company') {
-            title = 'Firma/Müşteri Listesi Yönetimi';
-            list = savedCompanies;
+            html += '<div style="margin-bottom:12px;"><button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="addOperator()">+ Yeni Personel Ekle</button></div>';
+            html += '<ul class="manage-list">';
+            savedOperators.forEach((op, i) => {
+                html += `<li style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #cbd5e1;">
+                    <span>${op}</span>
+                    <button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteOption(${i})">Sil</button>
+                </li>`;
+            });
+            html += '</ul>';
+        } else if (type === 'machine') {
+            html += '<div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">';
+            html += '<span style="font-size:0.82rem; color:#64748b;">💡 Makine seçildiğinde varsayılan saat ücreti ve operatörü forma otomatik doldurulur.</span>';
+            html += '<button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="addMachine()">+ Yeni Makine Ekle</button>';
+            html += '</div>';
+
+            html += '<div class="table-responsive"><table style="width:100%; border-collapse:collapse; font-size:0.88rem;">';
+            html += '<thead><tr style="background:#f1f5f9; text-align:left;"><th style="padding:6px;">Makine / Plaka Adı</th><th style="padding:6px; width:130px;">Varsayılan Saat Ücreti</th><th style="padding:6px;">Varsayılan Operatör</th><th style="padding:6px; text-align:center; width:130px;">İşlemler</th></tr></thead><tbody>';
+
+            machinesData.forEach((mObj, i) => {
+                const mName = typeof mObj === 'object' ? mObj.name : mObj;
+                const mRate = (typeof mObj === 'object' && mObj.defaultRate) ? mObj.defaultRate : '';
+                const mOp = (typeof mObj === 'object' && mObj.defaultOperator) ? mObj.defaultOperator : '';
+
+                const opOptions = `<option value="">-- Operatör Seçilmedi --</option>` + savedOperators.map(o => `<option value="${o}" ${o === mOp ? 'selected' : ''}>${o}</option>`).join('');
+
+                html += `<tr>
+                    <td style="padding:6px; border-bottom:1px solid #cbd5e1;">
+                        <input type="text" id="mNameInput_${i}" value="${mName}" style="width:100%; padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold;">
+                    </td>
+                    <td style="padding:6px; border-bottom:1px solid #cbd5e1;">
+                        <input type="number" step="0.01" id="mRateInput_${i}" value="${mRate}" placeholder="0 ₺" style="width:100%; padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px;">
+                    </td>
+                    <td style="padding:6px; border-bottom:1px solid #cbd5e1;">
+                        <select id="mOpInput_${i}" style="width:100%; padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px;">${opOptions}</select>
+                    </td>
+                    <td style="padding:6px; border-bottom:1px solid #cbd5e1; text-align:center;">
+                        <div style="display:flex; gap:4px; justify-content:center;">
+                            <button class="btn-success" style="padding:4px 8px; font-size:0.78rem;" onclick="saveMachineRow(${i})">💾 Kaydet</button>
+                            <button class="btn-danger" style="padding:4px 8px; font-size:0.78rem;" onclick="deleteOption(${i})">Sil</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
         }
-        
-        document.getElementById('modalTitle').innerText = title;
-        
-        let html = '<ul class="manage-list">';
-        list.forEach((item, i) => {
-            html += `<li><span>${item}</span> <button class="btn-danger" style="padding:4px 10px;" onclick="deleteOption(${i})">Sil</button></li>`;
-        });
-        html += '</ul>';
-        
+
         document.getElementById('modalContent').innerHTML = html;
         document.getElementById('managerModal').style.display = 'flex';
+    }
+
+    async function editCompany(oldName) {
+        const newName = prompt("Firma / Müşteri Ünvanını Düzenleyiniz:", oldName);
+        if (newName && newName.trim() && newName.trim() !== oldName) {
+            const trimmed = newName.trim();
+            if (savedCompanies.includes(trimmed)) {
+                return alert("Bu isimde başka bir firma zaten mevcut!");
+            }
+            await DataService.renameCompany(oldName, trimmed);
+            openManager('company');
+        }
+    }
+
+    async function saveMachineRow(i) {
+        const nameInput = document.getElementById(`mNameInput_${i}`);
+        const rateInput = document.getElementById(`mRateInput_${i}`);
+        const opInput = document.getElementById(`mOpInput_${i}`);
+
+        if (!nameInput || !nameInput.value.trim()) return alert("Makine adı boş olamaz!");
+
+        const oldName = typeof machinesData[i] === 'object' ? machinesData[i].name : machinesData[i];
+        const newName = nameInput.value.trim();
+        const newRate = parseFloat(rateInput.value) || 0;
+        const newOp = opInput.value || '';
+
+        machinesData[i] = {
+            name: newName,
+            defaultRate: newRate,
+            defaultOperator: newOp
+        };
+
+        if (oldName !== newName && oldName) {
+            await DataService.deleteOptionFromList('machine', oldName);
+        }
+
+        await DataService.saveMachines(machinesData);
+        savedMachines = machinesData.map(m => typeof m === 'object' ? m.name : m);
+        renderSelects();
+        alert(`"${newName}" makinesinin tanımları başarıyla kaydedildi!`);
+        openManager('machine');
     }
 
     async function deleteOption(i) {
         if(verifyDeleteAction()) {
             let itemToDelete = null;
             if(currentManageType === 'machine') {
-                itemToDelete = savedMachines[i];
-                savedMachines.splice(i, 1);
-                await DataService.saveMachines(savedMachines);
+                const item = machinesData[i];
+                itemToDelete = typeof item === 'object' ? item.name : item;
+                machinesData.splice(i, 1);
+                savedMachines = machinesData.map(m => typeof m === 'object' ? m.name : m);
+                await DataService.saveMachines(machinesData);
             } else if(currentManageType === 'operator') {
                 itemToDelete = savedOperators[i];
                 savedOperators.splice(i, 1);
