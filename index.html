@@ -955,6 +955,26 @@
                                 <label style="font-size:0.8rem; color:#475569;">Fatura Tarihi</label>
                                 <input type="date" id="paymentInvoiceDate">
                             </div>
+
+                            <!-- BU FATURANIN KAPSADIĞI MESAİLERİ SEÇME VE EŞLEŞTİRME ALANI -->
+                            <div id="paymentPendingRecordsSection" style="grid-column: 1 / -1; margin-top: 8px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                                    <span style="font-size: 0.82rem; font-weight: 700; color: #1e3a8a;">
+                                        🔗 Bu Faturanın Kapsadığı Mesaileri Seçiniz (Seçilenlere Fatura No Otomatik İşlenir):
+                                    </span>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button type="button" class="btn-outline" style="padding: 3px 8px; font-size: 0.75rem; height: 28px; min-height: 28px;" onclick="toggleAllPendingPaymentRecords(true)">Tümünü Seç</button>
+                                        <button type="button" class="btn-outline" style="padding: 3px 8px; font-size: 0.75rem; height: 28px; min-height: 28px;" onclick="toggleAllPendingPaymentRecords(false)">Seçimi Kaldır</button>
+                                    </div>
+                                </div>
+                                <div id="paymentPendingRecordsList" style="max-height: 180px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+                                    <!-- Dinamik olarak doldurulur -->
+                                </div>
+                                <div id="paymentPendingRecordsSummary" style="font-size: 0.82rem; font-weight: 600; color: #475569; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                    <span>Seçilen Mesai Tutarı: <strong id="paymentSelectedRecordsTotal" style="color: #991b1b;">0.00 TL</strong></span>
+                                    <span id="paymentSelectedRecordsMatchStatus"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2243,6 +2263,7 @@
                 btn.disabled = true;
                 btn.innerHTML = `<span>⚡ Güncel Borcu Çek</span>`;
             }
+            renderPaymentPendingRecords();
             return;
         }
 
@@ -2259,6 +2280,7 @@
             disp.innerHTML = `<span style="color:#475569;">🟢 Hesap Mutabık (Bakiye: 0.00 TL)</span>`;
             if (btn) btn.innerHTML = `<span>⚡ Güncel Borcu Çek (0.00 ₺)</span>`;
         }
+        renderPaymentPendingRecords();
     }
 
     function fetchAndFillCurrentDebt() {
@@ -2438,6 +2460,7 @@
             box.firstElementChild.innerText = 'Cariden Mahsup Edilecek İskonto / İndirim:';
         }
         disp.innerText = totalCredit.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' TL';
+        updatePaymentPendingRecordsSummary();
     }
 
     function togglePaymentInvoiceFields() {
@@ -2454,8 +2477,100 @@
                 const day = String(now.getDate()).padStart(2, '0');
                 dateInput.value = `${year}-${month}-${day}`;
             }
+            renderPaymentPendingRecords();
             const noInput = document.getElementById('paymentInvoiceNo');
             if (noInput) noInput.focus();
+        }
+    }
+
+    function renderPaymentPendingRecords() {
+        const listEl = document.getElementById('paymentPendingRecordsList');
+        const compEl = document.getElementById('paymentCompany');
+        if (!listEl || !compEl) return;
+
+        const compName = compEl.value;
+        if (!compName) {
+            listEl.innerHTML = '<div style="padding:12px; text-align:center; color:#64748b; font-size:0.84rem;">Lütfen önce yukarıdan bir firma seçiniz.</div>';
+            updatePaymentPendingRecordsSummary();
+            return;
+        }
+
+        const pending = records.filter(r => r.companyName === compName && !(r.invoiceIssued || r.invoiceNo));
+
+        if (pending.length === 0) {
+            listEl.innerHTML = `<div style="padding:12px; text-align:center; color:#64748b; font-size:0.84rem;">"${compName}" firmasına ait faturası bekleyen mesai kaydı bulunamadı.</div>`;
+            updatePaymentPendingRecordsSummary();
+            return;
+        }
+
+        let html = '';
+        pending.forEach(r => {
+            const amt = parseFloat(r.totalAmount || 0);
+            html += `
+                <label style="display:flex; justify-content:space-between; align-items:center; padding:9px 12px; border-bottom:1px solid #f1f5f9; cursor:pointer; user-select:none; font-size:0.84rem; margin:0; transition:background 0.15s ease;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox" class="payment-rec-chk" data-id="${r.id}" data-amount="${amt}" onchange="onPaymentPendingRecordCheckChange()" style="width:16px; height:16px; min-height:auto; cursor:pointer;">
+                        <span><strong>${r.formattedStart}</strong> | ${r.machineName} (${r.durationHours} Saat) ${r.extraNote ? '<span style="color:#1e3a8a;">['+r.extraNote+']</span>' : ''}</span>
+                    </div>
+                    <strong style="color:#991b1b; white-space:nowrap; margin-left:10px;">${amt.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong>
+                </label>
+            `;
+        });
+
+        listEl.innerHTML = html;
+        updatePaymentPendingRecordsSummary();
+    }
+
+    function toggleAllPendingPaymentRecords(checkAll) {
+        const checkboxes = document.querySelectorAll('.payment-rec-chk');
+        checkboxes.forEach(cb => cb.checked = checkAll);
+        onPaymentPendingRecordCheckChange();
+    }
+
+    function onPaymentPendingRecordCheckChange() {
+        const checkboxes = document.querySelectorAll('.payment-rec-chk');
+        checkboxes.forEach(cb => {
+            const row = cb.closest('label');
+            if (row) row.style.background = cb.checked ? '#eff6ff' : '#ffffff';
+        });
+        updatePaymentPendingRecordsSummary();
+    }
+
+    function updatePaymentPendingRecordsSummary() {
+        const totalEl = document.getElementById('paymentSelectedRecordsTotal');
+        const statusEl = document.getElementById('paymentSelectedRecordsMatchStatus');
+        if (!totalEl) return;
+
+        const checkedBoxes = Array.from(document.querySelectorAll('.payment-rec-chk:checked'));
+        let sum = 0;
+        checkedBoxes.forEach(cb => sum += parseFloat(cb.dataset.amount || 0));
+
+        totalEl.innerText = sum.toLocaleString('tr-TR', {minimumFractionDigits: 2}) + ' TL';
+
+        if (!statusEl) return;
+
+        if (checkedBoxes.length === 0) {
+            statusEl.innerHTML = '<span style="color:#64748b;">(Henüz mesai seçilmedi)</span>';
+            return;
+        }
+
+        const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
+        const cash = parseFloat(document.getElementById('paymentAmount')?.value) || 0;
+        const disc = parseFloat(document.getElementById('paymentDiscount')?.value) || 0;
+        const currentTarget = (type === 'nakit') ? cash : (type === 'iskontolu' ? (cash + disc) : disc);
+
+        if (currentTarget > 0) {
+            if (Math.abs(sum - currentTarget) < 0.01) {
+                statusEl.innerHTML = `<span style="color:#166534; font-weight:700;">✅ ${checkedBoxes.length} Mesai Eşleştirildi (${sum.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ - Tahsilatla Birebir Eşit)</span>`;
+            } else if (sum > currentTarget) {
+                const diff = sum - currentTarget;
+                statusEl.innerHTML = `<span style="color:#b45309; font-weight:600;">⚠️ ${checkedBoxes.length} Mesai (${sum.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺), Tahsilattan ${diff.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ fazla</span>`;
+            } else {
+                const diff = currentTarget - sum;
+                statusEl.innerHTML = `<span style="color:#1e3a8a; font-weight:600;">ℹ️ ${checkedBoxes.length} Mesai (${sum.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺), Kalan: ${diff.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span>`;
+            }
+        } else {
+            statusEl.innerHTML = `<span style="color:#1e3a8a; font-weight:700;">${checkedBoxes.length} Adet Mesai Seçildi</span>`;
         }
     }
 
@@ -2502,6 +2617,24 @@
 
         payments.push(newPay);
         await DataService.addPayment(newPay);
+
+        // Bu faturanın kapsadığı seçili mesailere de fatura no ve tarihini otomatik işle
+        const selectedRecCheckboxes = Array.from(document.querySelectorAll('.payment-rec-chk:checked'));
+        let linkedCount = 0;
+        if (selectedRecCheckboxes.length > 0 && invNo) {
+            for (const cb of selectedRecCheckboxes) {
+                const recId = Number(cb.dataset.id);
+                const rec = records.find(r => Number(r.id) === recId);
+                if (rec) {
+                    rec.invoiceNo = invNo;
+                    rec.invoiceDate = invDate;
+                    rec.invoiceIssued = true;
+                    await DataService.updateRecord(rec);
+                    linkedCount++;
+                }
+            }
+        }
+
         renderTable();
         document.getElementById('paymentAmount').value = '';
         document.getElementById('paymentDiscount').value = '';
@@ -2514,7 +2647,12 @@
         }
         updatePaymentCalculationSummary();
         updatePaymentCompanyBalanceDisplay();
-        showToast(payType === 'nakit' ? "Tahsilat Kaydı Başarıyla İşlendi!" : (payType === 'iskontolu' ? "İskontolu Tahsilat Başarıyla İşlendi!" : "İskonto Mahsubu Cariden Düşüldü!"));
+        
+        if (linkedCount > 0) {
+            showToast(`Tahsilat işlendi ve seçilen ${linkedCount} adet mesaiye Fatura No (${invNo}) otomatik tanımlandı!`, "success");
+        } else {
+            showToast(payType === 'nakit' ? "Tahsilat Kaydı Başarıyla İşlendi!" : (payType === 'iskontolu' ? "İskontolu Tahsilat Başarıyla İşlendi!" : "İskonto Mahsubu Cariden Düşüldü!"));
+        }
     });
 
     // --- TABLO VE ÖZET RENDER İŞLEMİ ---
