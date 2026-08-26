@@ -242,14 +242,26 @@
             gap: 15px;
             margin-bottom: 15px;
         }
+        .edit-form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 0;
+        }
+        .payment-invoice-grid {
+            display: none;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
         @media (max-width: 900px) {
-            .form-grid {
+            .form-grid, .edit-form-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
-        @media (max-width: 600px) {
-            .form-grid {
-                grid-template-columns: 1fr;
+        @media (max-width: 768px) {
+            .form-grid, .edit-form-grid, .payment-invoice-grid {
+                grid-template-columns: 1fr !important;
             }
         }
         .payment-form-grid {
@@ -289,9 +301,9 @@
                 grid-column: 1 / -1 !important;
             }
         }
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .payment-form-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr !important;
             }
             .payment-form-grid .form-group {
                 grid-column: 1 / -1 !important;
@@ -600,13 +612,115 @@
         .modal-body table {
             width: 100%;
             table-layout: auto;
+            border-collapse: collapse;
         }
-        .modal-body th, 
+        .modal-body th {
+            white-space: nowrap !important;
+            padding: 9px 12px;
+            background: #f1f5f9;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
         .modal-body td {
             white-space: normal;
-            word-break: break-word;
-            padding: 9px 10px;
+            word-break: normal;
+            padding: 8px 12px;
             vertical-align: middle;
+            font-size: 0.88rem;
+        }
+
+        /* --- CARİ DÖKÜM MOBİL KART GÖRÜNÜM STİLLERİ --- */
+        .history-card-item {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .history-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 6px;
+        }
+        .history-card-date {
+            font-size: 0.82rem;
+            color: #64748b;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .history-card-amount {
+            font-size: 1.08rem;
+            font-weight: 800;
+        }
+        .history-card-desc {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.4;
+        }
+        .history-card-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .history-card-badges {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Görünüm Değiştirici (Kart / Tablo) */
+        .history-view-toggle {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .history-view-toggle {
+                display: flex !important;
+                gap: 6px;
+                margin-bottom: 10px;
+            }
+            .history-view-toggle button {
+                flex: 1;
+                padding: 8px 10px;
+                font-size: 0.82rem;
+                border-radius: 4px;
+                font-weight: 600;
+            }
+            #historyTableContainer {
+                display: none;
+            }
+            #historyCardsContainer {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                max-height: 460px;
+                overflow-y: auto;
+                padding-right: 2px;
+            }
+            .mobile-scroll-hint {
+                display: block !important;
+            }
+        }
+        @media (min-width: 769px) {
+            #historyTableContainer {
+                display: block !important;
+            }
+            #historyCardsContainer {
+                display: none !important;
+            }
         }
         .manage-list { list-style: none; border: 1px solid var(--border-color); border-radius: 6px; margin: 0; padding: 0; }
         .manage-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
@@ -615,87 +729,291 @@
         /* --- MOBİL İÇİN ÖZEL RESPONSIVE UYARLAMALARI --- */
         @media (max-width: 768px) {
             body {
-                padding: 10px;
+                padding: 10px 8px;
+            }
+            .container {
+                width: 100%;
+                max-width: 100%;
+            }
+            /* iOS ve Android cihazlarda input odaklanınca ekranın büyümesini (auto-zoom) engelle */
+            input, select, textarea {
+                font-size: 16px !important;
             }
             .header-bar { 
                 flex-direction: column; 
                 gap: 12px; 
                 text-align: center;
-                padding: 15px;
+                padding: 14px 12px;
             }
             .header-title-box {
                 align-items: center;
             }
             .header-bar h1 {
                 font-size: 1.05rem;
+                justify-content: center;
+                text-align: center;
+                line-height: 1.3;
+            }
+            .header-bar > div:last-child {
+                width: 100%;
+                justify-content: center;
             }
             .header-bar button {
-                width: 100%;
+                flex: 1;
+                min-height: 38px;
             }
-            .stat-bar { 
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px; 
+
+            /* Sekmeler ve Fatura Yönetim Butonu */
+            .main-nav-tabs {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                border-bottom: none !important;
+                gap: 8px !important;
             }
+            .tab-btn-group {
+                width: 100% !important;
+                display: flex !important;
+                gap: 6px !important;
+            }
+            .tab-btn-group .tab-btn {
+                flex: 1 !important;
+                text-align: center !important;
+                padding: 11px 8px !important;
+                font-size: 0.84rem !important;
+                border-radius: 6px !important;
+                border: 1px solid var(--border-color) !important;
+            }
+            .tab-action-group {
+                width: 100% !important;
+                margin-bottom: 0 !important;
+            }
+            .btn-invoice-nav {
+                width: 100% !important;
+                justify-content: center !important;
+                padding: 11px 14px !important;
+                font-size: 0.88rem !important;
+                border-radius: 6px !important;
+            }
+
+            /* Butonlu Seçim Kutuları (Ekle / Yönet) */
+            .input-with-btn {
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+            .input-with-btn select {
+                width: 100% !important;
+                flex: 1 1 100% !important;
+            }
+            .input-with-btn button {
+                flex: 1 !important;
+                min-height: 40px !important;
+                font-size: 0.85rem !important;
+            }
+
+            /* Canlı Hesaplama ve Bilgi Kutuları */
             .live-calc-box { 
-                flex-direction: column; 
-                gap: 8px; 
-                text-align: left; 
+                flex-direction: column !important; 
+                gap: 6px !important; 
+                text-align: left !important;
+                padding: 10px 12px !important;
             }
+            .company-balance-box {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                text-align: left !important;
+                gap: 10px !important;
+            }
+            .company-balance-box button {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+
+            #paymentCalcSummary {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+            #paymentTotalCreditDisplay {
+                font-size: 1.2rem !important;
+                align-self: flex-end;
+            }
+            #paymentSubmitBtn {
+                width: 100% !important;
+                padding: 12px !important;
+                font-size: 0.98rem !important;
+                min-height: 44px;
+            }
+
+            /* Form Aksiyon Butonları */
             .form-actions {
-                flex-direction: column;
+                flex-direction: column !important;
+                gap: 8px !important;
             }
             .form-actions button {
-                width: 100%;
+                width: 100% !important;
+                min-width: 0 !important;
+                min-height: 42px !important;
             }
-            .tab-btn {
-                padding: 10px 14px;
-                font-size: 0.88rem;
-                flex: 1;
+
+            /* Özet İstatistik Barı */
+            .stat-bar { 
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+                padding: 10px !important;
+            }
+            .stat-item {
+                background: #ffffff;
+                padding: 10px 8px;
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+            }
+            .stat-label {
+                font-size: 0.72rem;
+            }
+            .stat-value {
+                font-size: 0.98rem;
+            }
+            .stat-item:last-child {
+                grid-column: 1 / -1;
+                background: #fef2f2;
+                border-color: #fecaca;
                 text-align: center;
             }
+
+            /* Firma Cari Kartları */
+            .summary-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .company-card {
+                padding: 12px !important;
+            }
+            .company-card button {
+                min-height: 38px !important;
+            }
+
+            /* Modallar */
             .modal-overlay {
                 padding: 6px;
             }
             .modal-card {
                 width: 100% !important;
                 max-width: 100% !important;
-                max-height: 96vh;
-                border-radius: 6px;
+                max-height: 96vh !important;
+                border-radius: 8px;
+            }
+            .modal-header {
+                padding: 12px 14px;
+            }
+            .modal-header h3 {
+                font-size: 0.92rem;
+                line-height: 1.3;
             }
             .modal-body {
-                padding: 12px 14px;
+                padding: 12px 10px;
+            }
+
+            /* Fatura & Cari Döküm Modal İçerikleri */
+            .invoice-filter-bar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            .invoice-filter-tabs {
+                display: flex !important;
+                width: 100% !important;
+                gap: 4px !important;
+            }
+            .invoice-filter-tabs button {
+                flex: 1 !important;
+                padding: 8px 4px !important;
+                font-size: 0.76rem !important;
+                text-align: center !important;
+            }
+            .invoice-batch-btn-box {
+                width: 100% !important;
+            }
+            .invoice-batch-btn-box button {
+                width: 100% !important;
+                min-height: 40px !important;
+                justify-content: center !important;
+            }
+
+            .invoice-kpi-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+            .invoice-kpi-grid > div:last-child {
+                grid-column: 1 / -1;
+            }
+
+            .history-modal-header-bar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                text-align: center !important;
+                gap: 8px !important;
+            }
+            .history-modal-actions {
+                display: flex !important;
+                width: 100% !important;
+                gap: 6px !important;
+            }
+            .history-modal-actions button {
+                flex: 1 !important;
+                min-height: 38px !important;
+            }
+
+            /* Sayfalama */
+            .pagination-container {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                text-align: center !important;
+                gap: 10px !important;
+                padding: 10px !important;
+            }
+            .pagination-controls {
+                justify-content: center !important;
+            }
+            .page-size-selector {
+                justify-content: center !important;
+            }
+
+            /* Sistem Bildirimi (Toast) */
+            #systemToastBox {
+                left: 12px !important;
+                right: 12px !important;
+                bottom: 16px !important;
+                align-items: center !important;
+                width: calc(100% - 24px) !important;
+            }
+            #systemToastBox > div {
+                width: 100% !important;
+                text-align: center !important;
+                padding: 12px 14px !important;
+                font-size: 0.88rem !important;
+            }
+
+            .panel {
+                padding: 14px 12px;
+                margin-bottom: 15px;
             }
         }
 
         @media (max-width: 480px) {
             .stat-bar { 
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr !important;
             }
-            .tab-container {
-                flex-direction: column;
-                border-bottom: none;
-                gap: 6px;
+            .stat-item:last-child {
+                grid-column: auto;
             }
-            .tab-btn {
-                border-radius: 4px;
-                border-bottom: 1px solid var(--border-color);
-                width: 100%;
+            .invoice-kpi-grid {
+                grid-template-columns: 1fr !important;
             }
-            .input-with-btn {
-                flex-wrap: wrap;
-            }
-            .input-with-btn select {
-                width: 100%;
-                flex: 1 1 100%;
-            }
-            .input-with-btn button {
-                flex: 1;
-            }
-            .panel {
-                padding: 15px;
+            .invoice-kpi-grid > div:last-child {
+                grid-column: auto;
             }
             .login-box {
-                padding: 25px 20px;
+                padding: 25px 18px;
             }
         }
 
@@ -802,13 +1120,13 @@
             </div>
         </div>
         
-        <div class="tab-container" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <div style="display:flex; gap:5px;">
-                <button class="tab-btn active" onclick="switchTab('workTab')">Çalışma Kaydı Ekle</button>
-                <button class="tab-btn" onclick="switchTab('paymentTab')">Tahsilat / Ödeme İşle</button>
+        <div class="tab-container main-nav-tabs">
+            <div class="tab-btn-group">
+                <button class="tab-btn active" onclick="switchTab('workTab')">🚜 Çalışma Kaydı Ekle</button>
+                <button class="tab-btn" onclick="switchTab('paymentTab')">💳 Tahsilat / Ödeme İşle</button>
             </div>
-            <div style="margin-bottom: 2px;">
-                <button type="button" class="btn-primary" onclick="openInvoiceManager()" style="background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%); padding: 8px 16px; font-size: 0.88rem; box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25); display:inline-flex; align-items:center; gap:6px;">
+            <div class="tab-action-group">
+                <button type="button" class="btn-primary btn-invoice-nav" onclick="openInvoiceManager()">
                     <span>🧾 Fatura & Faturalandırma Yönetimi</span>
                 </button>
             </div>
@@ -894,7 +1212,7 @@
             <div class="panel-title">💳 Tahsilat & İskontolu Ödeme Girişi</div>
 
             <!-- SEÇİLEN FİRMA GÜNCEL BORÇ & OTOMATİK BORÇ ÇEKME KARTI -->
-            <div id="companyBalanceInfoBox" style="margin-bottom: 16px; padding: 12px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #1e3a8a; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div id="companyBalanceInfoBox" class="company-balance-box" style="margin-bottom: 16px; padding: 12px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #1e3a8a; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                 <div>
                     <span style="font-size: 0.82rem; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px;">🏢 Seçilen Firmanın Güncel Bakiyesi</span>
                     <div id="companyCurrentBalanceDisplay" style="font-size: 1.15rem; font-weight: 800; color: #991b1b; margin-top: 3px;">
@@ -953,7 +1271,7 @@
                             <input type="checkbox" id="paymentInvoiceIssued" onchange="togglePaymentInvoiceFields()" style="width: 18px; height: 18px; cursor: pointer; min-height: auto;">
                             <span>📄 Bu Tahsilatın Faturası Kesildi mi? (Fatura No & Tarih Belirt)</span>
                         </label>
-                        <div id="paymentInvoiceFields" style="display: none; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
+                        <div id="paymentInvoiceFields" class="payment-invoice-grid">
                             <div class="form-group">
                                 <label style="font-size:0.8rem; color:#475569;">e-Fatura / e-Arşiv Numarası</label>
                                 <input type="text" id="paymentInvoiceNo" placeholder="Örn: GIB2026000001234">
@@ -1002,7 +1320,7 @@
         <div class="panel" style="padding: 0; border: none; background: transparent;">
             <div class="panel-title" style="margin-bottom: 10px;">📋 Sistem Kayıtları Defteri</div>
             <div class="table-responsive">
-                <table id="recordsTable">
+                <table id="recordsTable" style="min-width: 760px;">
                     <thead>
                         <tr>
                             <th>Firma Ünvanı</th>
@@ -1040,7 +1358,7 @@
         <div class="panel">
             <div class="panel-title">📊 Genel Durum ve Cari Hesap Özeti</div>
             
-            <div class="stat-bar" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+            <div class="stat-bar">
                 <div class="stat-item"><span class="stat-label">Toplam Mesai (Saat)</span><span class="stat-value" id="totalHours">0.00</span></div>
                 <div class="stat-item"><span class="stat-label">Toplam Hak Ediş</span><span class="stat-value" id="totalCost">0.00 TL</span></div>
                 <div class="stat-item"><span class="stat-label">Nakit / Banka Tahsilatı</span><span class="stat-value val-credit" id="totalCashPaid">0.00 TL</span></div>
@@ -2921,7 +3239,7 @@
         const oOpts = savedOperators.map(o => `<option value="${o}" ${o===rec.operator?'selected':''}>${o}</option>`).join('');
 
         document.getElementById('modalContent').innerHTML = `
-            <form id="editForm" class="form-grid" style="grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 0;">
+            <form id="editForm" class="form-grid edit-form-grid">
                 <div class="form-group"><label>Firma / Müşteri Ünvanı</label><select id="eComp">${cOpts}</select></div>
                 <div class="form-group"><label>İş Makinesi / Plaka</label><select id="eMach">${mOpts}</select></div>
                 <div class="form-group"><label>Operatör Adı Soyadı</label><select id="eOp">${oOpts}</select></div>
@@ -2929,7 +3247,7 @@
                 <div class="form-group"><label>Mesai Başlangıç</label><input type="datetime-local" id="eStart" value="${rec.startTimeIso}" required></div>
                 <div class="form-group"><label>Mesai Bitiş</label><input type="datetime-local" id="eEnd" value="${rec.endTimeIso}" required></div>
                 <div class="form-group" style="grid-column: 1 / -1;"><label>Ekstra Bilgilendirme / İş Notu</label><input type="text" id="eNote" value="${rec.extraNote || ''}" placeholder="Örn: 50 Palet taşındı"></div>
-                <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:8px; margin-top:5px;">
+                <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:8px; margin-top:5px; flex-wrap:wrap;">
                     <button type="button" class="btn-outline" onclick="closeModal()">İptal</button>
                     <button type="submit" class="btn-primary">Değişiklikleri Onayla ve Kaydet</button>
                 </div>
@@ -2985,9 +3303,9 @@
         const cBal = cCost - (cCashPaid + cDiscPaid);
 
         let html = `
-        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 14px; border-radius: 4px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+        <div class="history-modal-header-bar" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 14px; border-radius: 4px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
             <span style="font-size: 0.88rem; font-weight: 600; color: var(--primary);">📄 Detaylı Kurumsal Ekstre & Fatura</span>
-            <div style="display:flex; gap:6px;">
+            <div class="history-modal-actions" style="display:flex; gap:6px;">
                 <button class="btn-primary" style="padding: 6px 12px; font-size: 0.82rem;" onclick="openInvoiceManager('${safeCompEscaped}')">🧾 Fatura Yönetimi</button>
                 <button class="btn-success" style="padding: 6px 12px; font-size: 0.82rem;" onclick="generateCompanyPDF('${safeCompEscaped}')">📄 PDF Ekstresi İndir</button>
             </div>
@@ -3013,55 +3331,141 @@
             </div>
         </div>
 
-        <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
-            <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
-                <thead style="position:sticky; top:0; background:#f1f5f9; z-index:2;">
-                    <tr>
-                        <th style="width:125px; white-space:nowrap; padding:8px 10px;">İşlem Tarihi</th>
-                        <th style="padding:8px 10px;">Açıklama / Belge</th>
-                        <th style="width:120px; text-align:right; white-space:nowrap; padding:8px 10px;">Tutar</th>
-                        <th style="width:140px; white-space:nowrap; padding:8px 10px;">İşlem Tipi</th>
-                        <th style="width:140px; text-align:center; white-space:nowrap; padding:8px 10px;">Fatura Durumu</th>
-                        <th style="width:60px; text-align:center; white-space:nowrap; padding:8px 10px;">Sil</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-        
+        <!-- MOBİLDE GÖRÜNÜM SEÇİCİ (KART / TABLO) -->
+        <div class="history-view-toggle">
+            <button type="button" id="btnViewCards" class="btn-primary" onclick="setCompanyHistoryView('card')">📱 Kart Görünümü</button>
+            <button type="button" id="btnViewTable" class="btn-outline" onclick="setCompanyHistoryView('table')">📋 Geniş Tablo</button>
+        </div>
+
+        <!-- 1. MOBİL KART LİSTESİ GÖRÜNÜMÜ -->
+        <div id="historyCardsContainer">`;
+
+        let cardsHtml = '';
+        let tableRowsHtml = '';
         let hasData = false;
+
         records.filter(r => r.companyName === comp).forEach(r => {
             hasData = true;
             const noteText = r.extraNote ? `<br><small style="color:#1e3a8a;">📝 ${r.extraNote}</small>` : '';
             const invBadge = (r.invoiceIssued || r.invoiceNo) ? `<span class="badge-invoice-done">🟢 ${r.invoiceNo || 'Kesildi'}</span>` : `<span class="badge-invoice-pending">⏳ Bekliyor</span>`;
 
-            html += `<tr>
-                <td style="white-space:nowrap; padding:7px 10px;">${r.formattedStart}</td>
-                <td style="word-break:break-word; padding:7px 10px;">${r.machineName} (${r.durationHours} Saat)${noteText}</td>
-                <td style="color:var(--danger); font-weight:bold; text-align:right; white-space:nowrap; padding:7px 10px;">+${parseFloat(r.totalAmount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
-                <td style="white-space:nowrap; padding:7px 10px;"><span style="background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; padding:2px 6px; border-radius:4px; font-size:0.78rem; font-weight:700;">🚜 Hak Ediş</span></td>
-                <td style="text-align:center; white-space:nowrap; padding:7px 10px;">${invBadge}</td>
-                <td style="text-align:center; padding:7px 10px;"><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteRecord(${r.id})">Sil</button></td>
+            // Tablo Satırı
+            tableRowsHtml += `<tr>
+                <td style="white-space:nowrap; padding:8px 10px;">${r.formattedStart}</td>
+                <td style="min-width:220px; white-space:normal; word-break:normal; padding:8px 10px; line-height:1.4;"><strong>${r.machineName}</strong> (${r.durationHours} Saat)${noteText}</td>
+                <td style="color:var(--danger); font-weight:800; text-align:right; white-space:nowrap; padding:8px 10px;">+${parseFloat(r.totalAmount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td style="white-space:nowrap; padding:8px 10px;"><span style="background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; padding:3px 7px; border-radius:4px; font-size:0.78rem; font-weight:700;">🚜 Hak Ediş</span></td>
+                <td style="text-align:center; white-space:nowrap; padding:8px 10px;">${invBadge}</td>
+                <td style="text-align:center; padding:8px 10px;"><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem; min-height:32px;" onclick="deleteRecord(${r.id})">Sil</button></td>
             </tr>`;
+
+            // Mobil Kart
+            cardsHtml += `
+            <div class="history-card-item">
+                <div class="history-card-top">
+                    <span class="history-card-date">📅 ${r.formattedStart}</span>
+                    <span class="history-card-amount" style="color:var(--danger);">+${parseFloat(r.totalAmount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span>
+                </div>
+                <div class="history-card-desc">
+                    🚜 <strong>${r.machineName}</strong> (${r.durationHours} Saat)
+                    ${r.extraNote ? `<div style="font-size:0.82rem; color:#1e3a8a; font-weight:normal; margin-top:3px;">📝 ${r.extraNote}</div>` : ''}
+                </div>
+                <div class="history-card-bottom">
+                    <div class="history-card-badges">
+                        <span style="background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; padding:2px 7px; border-radius:4px; font-size:0.78rem; font-weight:700;">🚜 Hak Ediş</span>
+                        ${invBadge}
+                    </div>
+                    <button class="btn-danger" style="padding:4px 10px; font-size:0.8rem; min-height:32px;" onclick="deleteRecord(${r.id})">🗑️ Sil</button>
+                </div>
+            </div>`;
         });
+
         payments.filter(p => p.companyName === comp).forEach(p => {
             hasData = true;
             const parsed = parsePaymentAmounts(p);
             const isDisc = parsed.isDisc;
             const invBadge = (p.invoiceIssued || p.invoiceNo) ? `<span class="badge-invoice-done">🟢 ${p.invoiceNo || 'Kesildi'}</span>` : `<span class="badge-invoice-pending">⏳ Bekliyor</span>`;
 
-            html += `<tr>
-                <td style="white-space:nowrap; padding:7px 10px;">${p.date}</td>
-                <td style="word-break:break-word; padding:7px 10px;">${p.note}</td>
-                <td style="color:${isDisc ? '#b45309' : 'var(--success)'}; font-weight:bold; text-align:right; white-space:nowrap; padding:7px 10px;">-${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
-                <td style="white-space:nowrap; padding:7px 10px;"><span style="background:${isDisc ? '#fef3c7' : '#dcfce7'}; color:${isDisc ? '#b45309' : '#15803d'}; border:1px solid ${isDisc ? '#fde68a' : '#86efac'}; padding:2px 6px; border-radius:4px; font-size:0.78rem; font-weight:700;">${isDisc ? '🏷️ İskonto Mahsubu' : '💳 Nakit Tahsilat'}</span></td>
-                <td style="text-align:center; white-space:nowrap; padding:7px 10px;">${invBadge}</td>
-                <td style="text-align:center; padding:7px 10px;"><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deletePayment(${p.id})">Sil</button></td>
+            // Tablo Satırı
+            tableRowsHtml += `<tr>
+                <td style="white-space:nowrap; padding:8px 10px;">${p.date}</td>
+                <td style="min-width:220px; white-space:normal; word-break:normal; padding:8px 10px; line-height:1.4;">${p.note}</td>
+                <td style="color:${isDisc ? '#b45309' : 'var(--success)'}; font-weight:800; text-align:right; white-space:nowrap; padding:8px 10px;">-${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td style="white-space:nowrap; padding:8px 10px;"><span style="background:${isDisc ? '#fef3c7' : '#dcfce7'}; color:${isDisc ? '#b45309' : '#15803d'}; border:1px solid ${isDisc ? '#fde68a' : '#86efac'}; padding:3px 7px; border-radius:4px; font-size:0.78rem; font-weight:700;">${isDisc ? '🏷️ İskonto Mahsubu' : '💳 Nakit Tahsilat'}</span></td>
+                <td style="text-align:center; white-space:nowrap; padding:8px 10px;">${invBadge}</td>
+                <td style="text-align:center; padding:8px 10px;"><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem; min-height:32px;" onclick="deletePayment(${p.id})">Sil</button></td>
             </tr>`;
+
+            // Mobil Kart
+            cardsHtml += `
+            <div class="history-card-item">
+                <div class="history-card-top">
+                    <span class="history-card-date">📅 ${p.date}</span>
+                    <span class="history-card-amount" style="color:${isDisc ? '#b45309' : 'var(--success)'};">-${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span>
+                </div>
+                <div class="history-card-desc">
+                    ${p.note}
+                </div>
+                <div class="history-card-bottom">
+                    <div class="history-card-badges">
+                        <span style="background:${isDisc ? '#fef3c7' : '#dcfce7'}; color:${isDisc ? '#b45309' : '#15803d'}; border:1px solid ${isDisc ? '#fde68a' : '#86efac'}; padding:2px 7px; border-radius:4px; font-size:0.78rem; font-weight:700;">${isDisc ? '🏷️ İskonto Mahsubu' : '💳 Nakit Tahsilat'}</span>
+                        ${invBadge}
+                    </div>
+                    <button class="btn-danger" style="padding:4px 10px; font-size:0.8rem; min-height:32px;" onclick="deletePayment(${p.id})">🗑️ Sil</button>
+                </div>
+            </div>`;
         });
-        
-        if(!hasData) html += '<tr><td colspan="6" style="text-align:center; padding:15px; color:#64748b;">Cari hareket bulunamadı.</td></tr>';
-        
-        document.getElementById('modalContent').innerHTML = html + '</tbody></table></div>';
+
+        if (!hasData) {
+            cardsHtml += '<div style="text-align:center; padding:20px; color:#64748b; background:#f8fafc; border-radius:6px; border:1px dashed #cbd5e1;">Bu firmaya ait kayıt veya hareket bulunamadı.</div>';
+            tableRowsHtml += '<tr><td colspan="6" style="text-align:center; padding:15px; color:#64748b;">Cari hareket bulunamadı.</td></tr>';
+        }
+
+        html += cardsHtml + `</div>`;
+
+        // 2. GENİŞ TABLO GÖRÜNÜMÜ
+        html += `
+        <div id="historyTableContainer" class="table-responsive" style="max-height: 440px; overflow-y: auto; overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+            <div class="mobile-scroll-hint" style="display:none; font-size:0.75rem; color:#64748b; margin:6px 0; font-weight:600;">👉 Sağa kaydırarak tüm sütunları inceleyebilirsiniz</div>
+            <table style="width:100%; min-width: 800px; border-collapse:collapse; font-size:0.88rem;">
+                <thead style="position:sticky; top:0; background:#f1f5f9; z-index:2;">
+                    <tr>
+                        <th style="width:130px; min-width:130px; white-space:nowrap; padding:9px 10px;">İşlem Tarihi</th>
+                        <th style="min-width:220px; white-space:nowrap; padding:9px 10px;">Açıklama / Belge</th>
+                        <th style="width:120px; min-width:120px; text-align:right; white-space:nowrap; padding:9px 10px;">Tutar</th>
+                        <th style="width:130px; min-width:130px; white-space:nowrap; padding:9px 10px;">İşlem Tipi</th>
+                        <th style="width:140px; min-width:140px; text-align:center; white-space:nowrap; padding:9px 10px;">Fatura Durumu</th>
+                        <th style="width:65px; min-width:65px; text-align:center; white-space:nowrap; padding:9px 10px;">Sil</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHtml}
+                </tbody>
+            </table>
+        </div>`;
+
+        document.getElementById('modalContent').innerHTML = html;
         document.getElementById('managerModal').style.display = 'flex';
+    }
+
+    function setCompanyHistoryView(mode) {
+        const cBox = document.getElementById('historyCardsContainer');
+        const tBox = document.getElementById('historyTableContainer');
+        const bCard = document.getElementById('btnViewCards');
+        const bTable = document.getElementById('btnViewTable');
+        if (!cBox || !tBox) return;
+
+        if (mode === 'card') {
+            cBox.style.display = 'flex';
+            tBox.style.display = 'none';
+            if (bCard) bCard.className = 'btn-primary';
+            if (bTable) bTable.className = 'btn-outline';
+        } else {
+            cBox.style.display = 'none';
+            tBox.style.display = 'block';
+            if (bCard) bCard.className = 'btn-outline';
+            if (bTable) bTable.className = 'btn-primary';
+        }
     }
 
     // --- GÜVENLİ YAZDIRMA YARDIMCI FONKSİYONU ---
@@ -3486,7 +3890,7 @@
             html += '<button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="addMachine()">+ Yeni Makine Ekle</button>';
             html += '</div>';
 
-            html += '<div class="table-responsive" style="max-height: 480px; overflow-y:auto;"><table style="width:100%; border-collapse:collapse; font-size:0.88rem;">';
+            html += '<div class="table-responsive" style="max-height: 480px; overflow-y:auto;"><table style="width:100%; min-width: 640px; border-collapse:collapse; font-size:0.88rem;">';
             html += '<thead style="position:sticky; top:0; background:#f1f5f9; z-index:2;"><tr style="text-align:left;"><th style="padding:8px 10px;">Makine / Plaka Adı</th><th style="padding:8px 10px; width:180px;">Varsayılan Saat Ücreti</th><th style="padding:8px 10px; width:220px;">Varsayılan Operatör</th><th style="padding:8px 10px; text-align:center; width:140px;">İşlemler</th></tr></thead><tbody>';
 
             machinesData.forEach((mObj, i) => {
@@ -3757,7 +4161,7 @@
                 </div>
 
                 <!-- KPI ÖZET KARTLARI -->
-                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+                <div class="invoice-kpi-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
                     <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:10px; border-radius:6px; text-align:center;">
                         <div style="font-size:0.75rem; color:#1e40af; font-weight:700; text-transform:uppercase;">Toplam Hak Ediş</div>
                         <div style="font-size:1.15rem; font-weight:800; color:#1e3a8a; margin-top:2px;">${totalCost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
@@ -3781,27 +4185,27 @@
                 </div>
 
                 <!-- FİLTRE VE TOPLU FATURALANDIRMA ARAÇ ÇUBUĞU -->
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:#f1f5f9; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1;">
-                    <div style="display:flex; gap:6px;">
+                <div class="invoice-filter-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:#f1f5f9; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1;">
+                    <div class="invoice-filter-tabs" style="display:flex; gap:6px;">
                         <button type="button" class="tab-btn ${invoiceFilterType==='all'?'active':''}" style="padding:6px 12px; font-size:0.82rem; border-radius:4px;" onclick="setInvoiceFilter('all')">Tümü (${totalItemCount})</button>
                         <button type="button" class="tab-btn ${invoiceFilterType==='pending'?'active':''}" style="padding:6px 12px; font-size:0.82rem; border-radius:4px;" onclick="setInvoiceFilter('pending')">⏳ Fatura Bekleyenler</button>
                         <button type="button" class="tab-btn ${invoiceFilterType==='done'?'active':''}" style="padding:6px 12px; font-size:0.82rem; border-radius:4px;" onclick="setInvoiceFilter('done')">🟢 Faturası Kesilenler</button>
                     </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
+                    <div class="invoice-batch-btn-box" style="display:flex; align-items:center; gap:6px;">
                         <button type="button" class="btn-primary" style="padding:6px 12px; font-size:0.82rem;" onclick="batchApplyInvoice()">⚡ Seçilenlere Toplu Fatura No Tanımla</button>
                     </div>
                 </div>
 
                 <!-- LİSTE TABLOSU -->
                 <div class="table-responsive" style="max-height: 380px; overflow-y:auto;">
-                    <table style="width:100%; border-collapse:collapse; font-size:0.86rem;">
+                    <table style="width:100%; min-width: 820px; border-collapse:collapse; font-size:0.86rem;">
                         <thead style="position:sticky; top:0; background:#1e3a8a; color:white; z-index:2;">
                             <tr>
                                 <th style="width:36px; text-align:center; padding:8px 6px;"><input type="checkbox" id="selectAllInvoices" onchange="toggleSelectAllInvoices(this.checked)"></th>
                                 <th style="width:90px; padding:8px 6px; white-space:nowrap;">İşlem Türü</th>
-                                <th style="width:150px; padding:8px 6px;">Firma</th>
+                                <th style="width:150px; min-width:140px; padding:8px 6px; white-space:nowrap;">Firma</th>
                                 <th style="width:105px; padding:8px 6px; white-space:nowrap;">Tarih</th>
-                                <th style="padding:8px 6px;">Açıklama / Detay</th>
+                                <th style="min-width:180px; padding:8px 6px; white-space:nowrap;">Açıklama / Detay</th>
                                 <th style="width:115px; padding:8px 6px; text-align:right; white-space:nowrap;">Tutar (TL)</th>
                                 <th style="width:145px; padding:8px 6px; text-align:center; white-space:nowrap;">Fatura Durumu</th>
                                 <th style="width:110px; padding:8px 6px; text-align:center; white-space:nowrap;">İşlem</th>
@@ -3823,9 +4227,9 @@
                     <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
                         <td style="text-align:center; padding:6px;"><input type="checkbox" class="invoice-item-chk" data-kind="${item.kind}" data-id="${item.rawId}" data-amount="${item.amount}"></td>
                         <td style="padding:6px; font-weight:600; white-space:nowrap; color:${item.kind==='record'?'#1e3a8a':(item.isDisc?'#b45309':'#166534')};">${item.kind==='record'?'🚜 Mesai':(item.isDisc?'🏷️ İskonto':'💳 Tahsilat')}</td>
-                        <td style="padding:6px; font-weight:600; word-break:break-word;">${item.companyName}</td>
+                        <td style="padding:6px; font-weight:600; min-width:140px; white-space:normal; word-break:normal;">${item.companyName}</td>
                         <td style="padding:6px; white-space:nowrap;">${item.dateStr}</td>
-                        <td style="padding:6px; word-break:break-word;">${item.details}</td>
+                        <td style="padding:6px; min-width:180px; white-space:normal; word-break:normal;">${item.details}</td>
                         <td style="padding:6px; text-align:right; font-weight:bold; white-space:nowrap; color:${item.kind==='record'?'#991b1b':'#166534'};">${item.amount.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                         <td style="padding:6px; text-align:center; white-space:nowrap;">${statusBadge}</td>
                         <td style="padding:6px; text-align:center; white-space:nowrap;">
