@@ -2451,7 +2451,7 @@
             box.style.background = '#fffbeb';
             box.style.borderColor = '#fde68a';
             box.style.color = '#92400e';
-            box.firstElementChild.innerHTML = `Cariden Düşülecek Toplam (Nakit: ${cash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ + İskonto: ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ <span style="background:#fef3c7; border:1px solid #f59e0b; padding:2px 6px; border-radius:4px; font-size:0.8rem; margin-left:6px;">🏷️ %${discPercent} İskonto</span>):`;
+            box.firstElementChild.innerHTML = `Cariden Düşülecek Toplam (Nakit Tahsilat: ${cash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ + İskonto: ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ <span style="background:#fef3c7; border:1px solid #f59e0b; padding:2px 6px; border-radius:4px; font-size:0.8rem; margin-left:6px;">🏷️ Ayrı Satırlar Olarak Kaydedilir</span>):`;
         } else if (type === 'mahsup') {
             totalCredit = disc;
             box.style.background = '#fef2f2';
@@ -2581,42 +2581,75 @@
         const cash = parseFloat(document.getElementById('paymentAmount').value) || 0;
         const disc = parseFloat(document.getElementById('paymentDiscount').value) || 0;
         const userNote = document.getElementById('paymentNote').value.trim();
-        
-        let finalAmount = 0;
-        let finalNote = userNote;
-
-        if (payType === 'nakit') {
-            if (cash <= 0) return alert("Lütfen geçerli bir tahsilat tutarı giriniz!");
-            finalAmount = cash;
-            finalNote = userNote || 'Tahsilat Belgesi';
-        } else if (payType === 'iskontolu') {
-            if (cash <= 0 && disc <= 0) return alert("Lütfen tahsilat ve/veya iskonto tutarı giriniz!");
-            finalAmount = cash + disc;
-            const details = `(Nakit: ${cash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ + İskonto: ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺)`;
-            finalNote = userNote ? `${userNote} ${details}` : `🏷️ İskontolu Tahsilat ${details}`;
-        } else if (payType === 'mahsup') {
-            if (disc <= 0) return alert("Lütfen mahsup edilecek iskonto tutarını giriniz!");
-            finalAmount = disc;
-            finalNote = userNote ? (userNote.includes('İSKONTO') || userNote.includes('İNDİRİM') ? userNote : `🏷️ İSKONTO / İNDİRİM: ${userNote}`) : '🏷️ Cari İskonto / Anlaşma İndirimi';
-        }
+        const compName = document.getElementById('paymentCompany').value;
+        const payDateStr = new Date(document.getElementById('paymentDate').value).toLocaleDateString('tr-TR');
 
         const isInvoiceIssued = document.getElementById('paymentInvoiceIssued') ? document.getElementById('paymentInvoiceIssued').checked : false;
         const invNo = isInvoiceIssued ? (document.getElementById('paymentInvoiceNo')?.value.trim() || '') : '';
         const invDate = isInvoiceIssued ? (document.getElementById('paymentInvoiceDate')?.value || '') : '';
 
-        const newPay = {
-            id: Date.now(),
-            companyName: document.getElementById('paymentCompany').value,
-            amount: finalAmount.toFixed(2),
-            date: new Date(document.getElementById('paymentDate').value).toLocaleDateString('tr-TR'),
-            note: finalNote,
-            invoiceNo: invNo,
-            invoiceDate: invDate,
-            invoiceIssued: isInvoiceIssued
-        };
+        const paymentsToAdd = [];
 
-        payments.push(newPay);
-        await DataService.addPayment(newPay);
+        if (payType === 'nakit') {
+            if (cash <= 0) return alert("Lütfen geçerli bir tahsilat tutarı giriniz!");
+            paymentsToAdd.push({
+                id: Date.now(),
+                companyName: compName,
+                amount: cash.toFixed(2),
+                date: payDateStr,
+                note: userNote || 'Tahsilat Belgesi (Nakit / Havale)',
+                invoiceNo: invNo,
+                invoiceDate: invDate,
+                invoiceIssued: isInvoiceIssued
+            });
+        } else if (payType === 'iskontolu') {
+            if (cash <= 0 && disc <= 0) return alert("Lütfen tahsilat ve/veya iskonto tutarı giriniz!");
+
+            // 1. Gerçek Tahsil Edilen Nakit/Havale Satırı
+            if (cash > 0) {
+                paymentsToAdd.push({
+                    id: Date.now(),
+                    companyName: compName,
+                    amount: cash.toFixed(2),
+                    date: payDateStr,
+                    note: userNote ? `${userNote} (Tahsilat)` : 'Nakit / Havale Tahsilatı',
+                    invoiceNo: invNo,
+                    invoiceDate: invDate,
+                    invoiceIssued: isInvoiceIssued
+                });
+            }
+
+            // 2. İskonto Satırı (Ayrı Bir Satır Olarak Cariden Düşülür)
+            if (disc > 0) {
+                paymentsToAdd.push({
+                    id: Date.now() + 1,
+                    companyName: compName,
+                    amount: disc.toFixed(2),
+                    date: payDateStr,
+                    note: `🏷️ ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ İskonto / Fiyat İndirimi Yapıldı${userNote ? ' [' + userNote + ']' : ''}`,
+                    invoiceNo: '',
+                    invoiceDate: '',
+                    invoiceIssued: false
+                });
+            }
+        } else if (payType === 'mahsup') {
+            if (disc <= 0) return alert("Lütfen mahsup edilecek iskonto tutarını giriniz!");
+            paymentsToAdd.push({
+                id: Date.now(),
+                companyName: compName,
+                amount: disc.toFixed(2),
+                date: payDateStr,
+                note: userNote ? (userNote.includes('İSKONTO') || userNote.includes('İNDİRİM') ? userNote : `🏷️ İSKONTO / İNDİRİM: ${userNote}`) : `🏷️ ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ İskonto / Fiyat İndirimi Yapıldı`,
+                invoiceNo: invNo,
+                invoiceDate: invDate,
+                invoiceIssued: isInvoiceIssued
+            });
+        }
+
+        for (const p of paymentsToAdd) {
+            payments.push(p);
+            await DataService.addPayment(p);
+        }
 
         // Bu faturanın kapsadığı seçili mesailere de fatura no ve tarihini otomatik işle
         const selectedRecCheckboxes = Array.from(document.querySelectorAll('.payment-rec-chk:checked'));
@@ -2648,10 +2681,12 @@
         updatePaymentCalculationSummary();
         updatePaymentCompanyBalanceDisplay();
         
-        if (linkedCount > 0) {
+        if (payType === 'iskontolu' && cash > 0 && disc > 0) {
+            showToast(`Tahsilat (${cash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺) ve İskonto (${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺) ayrı satırlar halinde işlendi!`, "success");
+        } else if (linkedCount > 0) {
             showToast(`Tahsilat işlendi ve seçilen ${linkedCount} adet mesaiye Fatura No (${invNo}) otomatik tanımlandı!`, "success");
         } else {
-            showToast(payType === 'nakit' ? "Tahsilat Kaydı Başarıyla İşlendi!" : (payType === 'iskontolu' ? "İskontolu Tahsilat Başarıyla İşlendi!" : "İskonto Mahsubu Cariden Düşüldü!"));
+            showToast(payType === 'nakit' ? "Tahsilat Kaydı Başarıyla İşlendi!" : "İskonto Mahsubu Cariden Düşüldü!");
         }
     });
 
@@ -3490,12 +3525,14 @@
         });
 
         filteredPayments.forEach(p => {
+            const isDisc = p.note && (p.note.includes('İSKONTO') || p.note.includes('İNDİRİM'));
             allItems.push({
                 rawId: p.id,
                 kind: 'payment',
+                isDisc: isDisc,
                 companyName: p.companyName,
                 dateStr: p.date,
-                details: `💳 ${p.note || 'Tahsilat'}`,
+                details: isDisc ? (p.note.startsWith('🏷️') ? p.note : `🏷️ ${p.note}`) : `💳 ${p.note || 'Tahsilat'}`,
                 amount: parseFloat(p.amount || 0),
                 invoiceIssued: Boolean(p.invoiceIssued || p.invoiceNo),
                 invoiceNo: p.invoiceNo || '',
@@ -3606,7 +3643,7 @@
                 html += `
                     <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
                         <td style="text-align:center; padding:6px;"><input type="checkbox" class="invoice-item-chk" data-kind="${item.kind}" data-id="${item.rawId}" data-amount="${item.amount}"></td>
-                        <td style="padding:6px; font-weight:600; white-space:nowrap; color:${item.kind==='record'?'#1e3a8a':'#166534'};">${item.kind==='record'?'🚜 Mesai':'💳 Tahsilat'}</td>
+                        <td style="padding:6px; font-weight:600; white-space:nowrap; color:${item.kind==='record'?'#1e3a8a':(item.isDisc?'#b45309':'#166534')};">${item.kind==='record'?'🚜 Mesai':(item.isDisc?'🏷️ İskonto':'💳 Tahsilat')}</td>
                         <td style="padding:6px; font-weight:600; word-break:break-word;">${item.companyName}</td>
                         <td style="padding:6px; white-space:nowrap;">${item.dateStr}</td>
                         <td style="padding:6px; word-break:break-word;">${item.details}</td>
