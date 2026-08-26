@@ -926,13 +926,20 @@
                         <input type="date" id="paymentDate" required>
                     </div>
 
-                    <!-- Satır 2: Tutarlar ve Açıklama (Simetrik ve Tam Hizalı) -->
+                    <!-- Satır 2: Tutarlar ve İskonto Oranı (Simetrik 3 Sütunlu Izgara) -->
                     <div class="form-group" id="paymentAmountGroup">
-                        <label id="paymentAmountLabel">Tahsil Edilen Tutar (TL)</label>
+                        <label id="paymentAmountLabel">Tahsil Edilen (Nakit/Banka) Tutar (TL)</label>
                         <input type="number" id="paymentAmount" step="0.01" min="0" placeholder="0.00">
                     </div>
+                    <div class="form-group" id="paymentDiscountRateGroup" style="display: none;">
+                        <label id="paymentDiscountRateLabel" style="color: #b45309;">İskonto Oranı (%)</label>
+                        <input type="number" id="paymentDiscountRate" step="0.01" min="0" max="100" placeholder="%0.00" style="border-color: #f59e0b; font-weight: bold; color: #b45309;">
+                    </div>
                     <div class="form-group" id="paymentDiscountGroup" style="display: none;">
-                        <label id="paymentDiscountLabel" style="color: #b45309;">Uygulanan İskonto (TL)</label>
+                        <label id="paymentDiscountLabel" style="color: #b45309; display: flex; justify-content: space-between; align-items: center;">
+                            <span>Uygulanan İskonto (TL)</span>
+                            <span id="paymentDiscountRateBadge" style="background:#fef3c7; color:#b45309; border:1px solid #f59e0b; padding:1px 6px; border-radius:4px; font-size:0.75rem; font-weight:700;">%0.00 İskonto</span>
+                        </label>
                         <input type="number" id="paymentDiscount" step="0.01" min="0" placeholder="0.00" style="border-color: #f59e0b;">
                     </div>
                     <div class="form-group span-2-desk" id="paymentNoteGroup" style="grid-column: span 2;">
@@ -1033,10 +1040,11 @@
         <div class="panel">
             <div class="panel-title">📊 Genel Durum ve Cari Hesap Özeti</div>
             
-            <div class="stat-bar">
+            <div class="stat-bar" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                 <div class="stat-item"><span class="stat-label">Toplam Mesai (Saat)</span><span class="stat-value" id="totalHours">0.00</span></div>
                 <div class="stat-item"><span class="stat-label">Toplam Hak Ediş</span><span class="stat-value" id="totalCost">0.00 TL</span></div>
-                <div class="stat-item"><span class="stat-label">Toplam Tahsilat</span><span class="stat-value val-credit" id="totalPaid">0.00 TL</span></div>
+                <div class="stat-item"><span class="stat-label">Nakit / Banka Tahsilatı</span><span class="stat-value val-credit" id="totalCashPaid">0.00 TL</span></div>
+                <div class="stat-item"><span class="stat-label">Yapılan İskonto / İndirim</span><span class="stat-value" style="color:#b45309;" id="totalDiscountPaid">0.00 TL</span></div>
                 <div class="stat-item"><span class="stat-label">Sistem Genel Bakiyesi</span><span class="stat-value val-debt" id="totalBalance">0.00 TL</span></div>
             </div>
 
@@ -1858,6 +1866,9 @@
         const payAmt = document.getElementById('paymentAmount');
         if (payAmt) payAmt.addEventListener('input', onPaymentAmountInput);
 
+        const payRate = document.getElementById('paymentDiscountRate');
+        if (payRate) payRate.addEventListener('input', onPaymentDiscountRateInput);
+
         const payDisc = document.getElementById('paymentDiscount');
         if (payDisc) payDisc.addEventListener('input', onPaymentDiscountInput);
 
@@ -2231,6 +2242,30 @@
         showToast("Mesai Kaydı Başarıyla İşlendi!");
     });
 
+    // --- GÜVENLİ TAHSİLAT VE İSKONTO TUTARI AYRIŞTIRICI ---
+    function parsePaymentAmounts(p) {
+        if (!p) return { cash: 0, disc: 0, total: 0, isDisc: false, isLegacy: false };
+        const totalAmt = parseFloat(p.amount || 0);
+        const note = (p.note || '').trim();
+
+        // Eski birleşik kayıtları akıllıca yakala (Örn: "(Nakit: 18.000,00 ₺ + İskonto: 2.000,00 ₺)")
+        const match = note.match(/Nakit[:\s]*([0-9\.,]+)[^0-9\.,]+İskonto[:\s]*([0-9\.,]+)/i);
+        if (match) {
+            const cash = parseFloat(match[1].replace(/\./g, '').replace(',', '.')) || 0;
+            const disc = parseFloat(match[2].replace(/\./g, '').replace(',', '.')) || 0;
+            return { cash, disc, total: cash + disc, isDisc: true, isLegacy: true };
+        }
+
+        // Saf iskonto / indirim satırı mı?
+        const isDisc = note.includes('İSKONTO') || note.includes('İNDİRİM') || note.startsWith('🏷️');
+        if (isDisc) {
+            return { cash: 0, disc: totalAmt, total: totalAmt, isDisc: true, isLegacy: false };
+        }
+
+        // Standart nakit / banka tahsilat satırı
+        return { cash: totalAmt, disc: 0, total: totalAmt, isDisc: false, isLegacy: false };
+    }
+
     // --- FİRMA GÜNCEL BORÇ HESAPLAMA VE OTOMATİK DOLDURMA YARDIMCILARI ---
     function getCompanyCurrentBalance(compName) {
         if (!compName) return 0;
@@ -2243,7 +2278,8 @@
         });
         payments.forEach(p => {
             if (p.companyName === compName) {
-                totalPaid += parseFloat(p.amount || 0);
+                const parsed = parsePaymentAmounts(p);
+                totalPaid += parsed.total;
             }
         });
         return totalHakEdis - totalPaid;
@@ -2270,14 +2306,22 @@
         const balance = getCompanyCurrentBalance(compName);
         if (btn) btn.disabled = false;
 
+        let cCash = 0, cDisc = 0;
+        payments.filter(p => p.companyName === compName).forEach(p => {
+            const parsed = parsePaymentAmounts(p);
+            cCash += parsed.cash;
+            cDisc += parsed.disc;
+        });
+        const breakdownHtml = (cCash > 0 || cDisc > 0) ? ` <span style="font-size:0.8rem; color:#475569; font-weight:normal; margin-left:6px;">[Nakit Tahsilat: <strong>${cCash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong>${cDisc > 0 ? ` | Yapılan İskonto: <strong style="color:#b45309;">${cDisc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong>` : ''}]</span>` : '';
+
         if (balance > 0) {
-            disp.innerHTML = `<span style="color:#991b1b;">⚠️ Borç Bakiye: <strong>${balance.toLocaleString('tr-TR', {minimumFractionDigits:2})} TL</strong></span>`;
+            disp.innerHTML = `<span style="color:#991b1b;">⚠️ Borç Bakiye: <strong>${balance.toLocaleString('tr-TR', {minimumFractionDigits:2})} TL</strong></span>${breakdownHtml}`;
             if (btn) btn.innerHTML = `<span>⚡ Güncel Borcu Çek (${balance.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺)</span>`;
         } else if (balance < 0) {
-            disp.innerHTML = `<span style="color:#166534;">✅ Alacaklı (Fazla Ödeme): <strong>${Math.abs(balance).toLocaleString('tr-TR', {minimumFractionDigits:2})} TL</strong></span>`;
+            disp.innerHTML = `<span style="color:#166534;">✅ Alacaklı (Fazla Ödeme): <strong>${Math.abs(balance).toLocaleString('tr-TR', {minimumFractionDigits:2})} TL</strong></span>${breakdownHtml}`;
             if (btn) btn.innerHTML = `<span>⚡ Bakiyeyi Aktar (${Math.abs(balance).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺)</span>`;
         } else {
-            disp.innerHTML = `<span style="color:#475569;">🟢 Hesap Mutabık (Bakiye: 0.00 TL)</span>`;
+            disp.innerHTML = `<span style="color:#475569;">🟢 Hesap Mutabık (Bakiye: 0.00 TL)</span>${breakdownHtml}`;
             if (btn) btn.innerHTML = `<span>⚡ Güncel Borcu Çek (0.00 ₺)</span>`;
         }
         renderPaymentPendingRecords();
@@ -2300,14 +2344,14 @@
             }
         } else if (payType === 'iskontolu') {
             const amtInput = document.getElementById('paymentAmount');
+            const rateInput = document.getElementById('paymentDiscountRate');
             const discInput = document.getElementById('paymentDiscount');
             if (amtInput) {
                 amtInput.value = targetAmount > 0 ? targetAmount.toFixed(2) : '0.00';
                 amtInput.focus();
             }
-            if (discInput) {
-                discInput.value = '0.00';
-            }
+            if (discInput) discInput.value = '0.00';
+            if (rateInput) rateInput.value = '0.00';
         } else if (payType === 'mahsup') {
             const discInput = document.getElementById('paymentDiscount');
             if (discInput) {
@@ -2317,29 +2361,63 @@
         }
 
         updatePaymentCalculationSummary();
-        showToast(`"${compName}" firmasının güncel borcu (${targetAmount.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺) alana aktarıldı!`);
+        showToast(`"${compName}" firmasının güncel borcu (${targetAmount.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺) forma aktarıldı!`);
     }
 
     function onPaymentAmountInput() {
         const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
         const sel = document.getElementById('paymentCompany');
         const amtInput = document.getElementById('paymentAmount');
+        const rateInput = document.getElementById('paymentDiscountRate');
         const discInput = document.getElementById('paymentDiscount');
 
         if (type === 'iskontolu' && sel && sel.value && amtInput && discInput) {
             const balance = getCompanyCurrentBalance(sel.value);
+            const cashStr = amtInput.value.trim();
+            const cash = parseFloat(cashStr) || 0;
+
             if (balance > 0) {
-                const cashStr = amtInput.value.trim();
                 if (cashStr !== '') {
-                    const cash = parseFloat(cashStr) || 0;
                     if (cash <= balance) {
-                        discInput.value = (balance - cash).toFixed(2);
+                        const disc = balance - cash;
+                        discInput.value = disc.toFixed(2);
+                        const rate = (balance > 0) ? ((disc / balance) * 100) : 0;
+                        if (rateInput) rateInput.value = rate.toFixed(2);
                     } else {
                         discInput.value = '0.00';
+                        if (rateInput) rateInput.value = '0.00';
                     }
                 } else {
                     discInput.value = balance.toFixed(2);
+                    if (rateInput) rateInput.value = '100.00';
                 }
+            } else {
+                const disc = parseFloat(discInput.value) || 0;
+                const total = cash + disc;
+                const rate = total > 0 ? ((disc / total) * 100) : 0;
+                if (rateInput) rateInput.value = rate.toFixed(2);
+            }
+        }
+        updatePaymentCalculationSummary();
+    }
+
+    function onPaymentDiscountRateInput() {
+        const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
+        const sel = document.getElementById('paymentCompany');
+        const amtInput = document.getElementById('paymentAmount');
+        const rateInput = document.getElementById('paymentDiscountRate');
+        const discInput = document.getElementById('paymentDiscount');
+
+        if (type === 'iskontolu' && sel && sel.value && amtInput && discInput && rateInput) {
+            const balance = getCompanyCurrentBalance(sel.value);
+            const r = Math.min(100, Math.max(0, parseFloat(rateInput.value) || 0));
+            const base = (balance > 0) ? balance : (parseFloat(amtInput.value) || 0) + (parseFloat(discInput.value) || 0);
+
+            if (base > 0) {
+                const disc = base * (r / 100);
+                const cash = base - disc;
+                discInput.value = disc.toFixed(2);
+                amtInput.value = cash.toFixed(2);
             }
         }
         updatePaymentCalculationSummary();
@@ -2349,22 +2427,34 @@
         const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
         const sel = document.getElementById('paymentCompany');
         const amtInput = document.getElementById('paymentAmount');
+        const rateInput = document.getElementById('paymentDiscountRate');
         const discInput = document.getElementById('paymentDiscount');
 
         if (type === 'iskontolu' && sel && sel.value && amtInput && discInput) {
             const balance = getCompanyCurrentBalance(sel.value);
+            const discStr = discInput.value.trim();
+            const disc = parseFloat(discStr) || 0;
+
             if (balance > 0) {
-                const discStr = discInput.value.trim();
                 if (discStr !== '') {
-                    const disc = parseFloat(discStr) || 0;
                     if (disc <= balance) {
-                        amtInput.value = (balance - disc).toFixed(2);
+                        const cash = balance - disc;
+                        amtInput.value = cash.toFixed(2);
+                        const rate = (balance > 0) ? ((disc / balance) * 100) : 0;
+                        if (rateInput) rateInput.value = rate.toFixed(2);
                     } else {
                         amtInput.value = '0.00';
+                        if (rateInput) rateInput.value = '100.00';
                     }
                 } else {
                     amtInput.value = balance.toFixed(2);
+                    if (rateInput) rateInput.value = '0.00';
                 }
+            } else {
+                const cash = parseFloat(amtInput.value) || 0;
+                const total = cash + disc;
+                const rate = total > 0 ? ((disc / total) * 100) : 0;
+                if (rateInput) rateInput.value = rate.toFixed(2);
             }
         }
         updatePaymentCalculationSummary();
@@ -2374,57 +2464,66 @@
     function onPaymentTypeChange() {
         const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
         const amtGrp = document.getElementById('paymentAmountGroup');
+        const rateGrp = document.getElementById('paymentDiscountRateGroup');
         const discGrp = document.getElementById('paymentDiscountGroup');
         const noteGrp = document.getElementById('paymentNoteGroup');
         const amtLbl = document.getElementById('paymentAmountLabel');
         const discLbl = document.getElementById('paymentDiscountLabel');
         const amtInput = document.getElementById('paymentAmount');
+        const rateInput = document.getElementById('paymentDiscountRate');
         const discInput = document.getElementById('paymentDiscount');
         const noteInput = document.getElementById('paymentNote');
-        const btn = document.getElementById('paymentSubmitBtn');
+        const btn = document.getElementById('btnSubmitPayment') || document.querySelector('#paymentForm button[type="submit"]');
         const sel = document.getElementById('paymentCompany');
         const balance = (sel && sel.value) ? getCompanyCurrentBalance(sel.value) : 0;
 
         if (type === 'nakit') {
             if (amtGrp) { amtGrp.style.display = 'flex'; amtGrp.style.gridColumn = 'auto'; }
+            if (rateGrp) { rateGrp.style.display = 'none'; }
             if (discGrp) { discGrp.style.display = 'none'; }
             if (noteGrp) { noteGrp.style.gridColumn = 'span 2'; }
             if (amtLbl) amtLbl.innerText = 'Tahsil Edilen Tutar (TL)';
             if (amtInput) amtInput.required = true;
             if (discInput) { discInput.required = false; discInput.value = ''; }
-            if (noteInput && !noteInput.value) noteInput.placeholder = 'Örn: Dekont No: 1234';
+            if (rateInput) { rateInput.value = ''; }
+            if (noteInput && !noteInput.value) noteInput.placeholder = 'Örn: Dekont No: 1234 veya Kasa Tahsilatı';
             if (btn) {
                 btn.className = 'btn-success';
-                btn.innerText = 'Tahsilatı Onayla ve Kaydet';
+                btn.innerText = 'Tahsilat Kaydını Tamamla (Cariden Düş)';
+            }
+            if (balance > 0 && (!amtInput.value || parseFloat(amtInput.value) === 0)) {
+                amtInput.value = balance.toFixed(2);
             }
         } else if (type === 'iskontolu') {
             if (amtGrp) { amtGrp.style.display = 'flex'; amtGrp.style.gridColumn = 'auto'; }
+            if (rateGrp) { rateGrp.style.display = 'flex'; rateGrp.style.gridColumn = 'auto'; }
             if (discGrp) { discGrp.style.display = 'flex'; discGrp.style.gridColumn = 'auto'; }
-            if (noteGrp) { noteGrp.style.gridColumn = 'auto'; }
-            if (amtLbl) amtLbl.innerText = 'Tahsil Edilen (İndirimli) Tutar (TL)';
-            if (discLbl) discLbl.innerText = 'Uygulanan İskonto (TL)';
+            if (noteGrp) { noteGrp.style.gridColumn = '1 / -1'; }
+            if (amtLbl) amtLbl.innerText = 'Tahsil Edilen (Nakit/Banka) Tutar (TL)';
             if (amtInput) amtInput.required = true;
             if (discInput) discInput.required = true;
-            if (noteInput && !noteInput.value) noteInput.placeholder = 'Örn: Anlaşma İskontosu / Fiyat Farkı';
+            if (noteInput && !noteInput.value) noteInput.placeholder = 'Örn: İskonto Anlaşması / Havale Dekontu';
             if (btn) {
                 btn.className = 'btn-primary';
-                btn.innerText = 'İskontolu Tahsilatı Kaydet (Cariden Mahsup Et)';
+                btn.innerText = 'İskontolu Tahsilatı Kaydet (Nakit ve İskonto Ayrı Satır Olarak Cariden Düşülür)';
             }
             if (balance > 0 && (!amtInput.value || parseFloat(amtInput.value) === 0)) {
                 amtInput.value = balance.toFixed(2);
                 discInput.value = '0.00';
+                if (rateInput) rateInput.value = '0.00';
             }
         } else if (type === 'mahsup') {
             if (amtGrp) { amtGrp.style.display = 'none'; }
+            if (rateGrp) { rateGrp.style.display = 'none'; }
             if (discGrp) { discGrp.style.display = 'flex'; discGrp.style.gridColumn = 'auto'; }
             if (noteGrp) { noteGrp.style.gridColumn = 'span 2'; }
-            if (discLbl) discLbl.innerText = 'Mahsup Edilecek İskonto Tutarı (TL)';
             if (amtInput) { amtInput.required = false; amtInput.value = ''; }
             if (discInput) discInput.required = true;
+            if (rateInput) { rateInput.value = ''; }
             if (noteInput && !noteInput.value) noteInput.placeholder = 'Örn: Yıl Sonu İskonto / Fiyat Farkı İndirimi';
             if (btn) {
                 btn.className = 'btn-primary';
-                btn.innerText = 'İskonto Mahsubunu Kaydet';
+                btn.innerText = 'İskonto Mahsubunu Kaydet (Cariden Düş)';
             }
         }
         updatePaymentCalculationSummary();
@@ -2432,13 +2531,16 @@
 
     function updatePaymentCalculationSummary() {
         const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
-        const cash = parseFloat(document.getElementById('paymentAmount').value) || 0;
-        const disc = parseFloat(document.getElementById('paymentDiscount').value) || 0;
+        const cash = parseFloat(document.getElementById('paymentAmount')?.value) || 0;
+        const disc = parseFloat(document.getElementById('paymentDiscount')?.value) || 0;
+        const rateBadge = document.getElementById('paymentDiscountRateBadge');
         const disp = document.getElementById('paymentTotalCreditDisplay');
         const box = document.getElementById('paymentCalcSummary');
         if (!disp || !box) return;
 
         let totalCredit = 0;
+        let discPercent = '0.00';
+
         if (type === 'nakit') {
             totalCredit = cash;
             box.style.background = '#f0fdf4';
@@ -2447,17 +2549,19 @@
             box.firstElementChild.innerText = 'Cariden Düşülecek Tahsilat Tutarı:';
         } else if (type === 'iskontolu') {
             totalCredit = cash + disc;
-            const discPercent = totalCredit > 0 ? ((disc / totalCredit) * 100).toFixed(1) : '0.0';
+            discPercent = totalCredit > 0 ? ((disc / totalCredit) * 100).toFixed(2) : '0.00';
             box.style.background = '#fffbeb';
             box.style.borderColor = '#fde68a';
             box.style.color = '#92400e';
-            box.firstElementChild.innerHTML = `Cariden Düşülecek Toplam (Nakit Tahsilat: ${cash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ + İskonto: ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ <span style="background:#fef3c7; border:1px solid #f59e0b; padding:2px 6px; border-radius:4px; font-size:0.8rem; margin-left:6px;">🏷️ Ayrı Satırlar Olarak Kaydedilir</span>):`;
+            box.firstElementChild.innerHTML = `Cariden Düşülecek Toplam (Nakit Tahsilat: <strong>${cash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong> + İskonto: <strong>${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong> | <span style="background:#fef3c7; border:1px solid #f59e0b; padding:2px 6px; border-radius:4px; font-size:0.8rem; font-weight:700;">🏷️ %${discPercent} İskonto Oranı</span>):`;
+            if (rateBadge) rateBadge.innerText = `%${discPercent} İskonto`;
         } else if (type === 'mahsup') {
             totalCredit = disc;
             box.style.background = '#fef2f2';
             box.style.borderColor = '#fecaca';
             box.style.color = '#991b1b';
             box.firstElementChild.innerText = 'Cariden Mahsup Edilecek İskonto / İndirim:';
+            if (rateBadge) rateBadge.innerText = `İskonto Tutarı: ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺`;
         }
         disp.innerText = totalCredit.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' TL';
         updatePaymentPendingRecordsSummary();
@@ -2621,12 +2725,14 @@
 
             // 2. İskonto Satırı (Ayrı Bir Satır Olarak Cariden Düşülür)
             if (disc > 0) {
+                const totalSum = cash + disc;
+                const discPercent = totalSum > 0 ? ((disc / totalSum) * 100).toFixed(2) : '0.00';
                 paymentsToAdd.push({
                     id: Date.now() + 1,
                     companyName: compName,
                     amount: disc.toFixed(2),
                     date: payDateStr,
-                    note: `🏷️ ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ İskonto / Fiyat İndirimi Yapıldı${userNote ? ' [' + userNote + ']' : ''}`,
+                    note: `🏷️ İskonto / Fiyat İndirimi (%${discPercent} - ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺)${userNote ? ' [' + userNote + ']' : ''}`,
                     invoiceNo: '',
                     invoiceDate: '',
                     invoiceIssued: false
@@ -2670,6 +2776,7 @@
 
         renderTable();
         document.getElementById('paymentAmount').value = '';
+        if (document.getElementById('paymentDiscountRate')) document.getElementById('paymentDiscountRate').value = '';
         document.getElementById('paymentDiscount').value = '';
         document.getElementById('paymentNote').value = '';
         if (document.getElementById('paymentInvoiceIssued')) {
@@ -2695,7 +2802,7 @@
         updatePaymentCompanyBalanceDisplay();
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
-        let [gHours, gCost, gPaid] = [0, 0, 0];
+        let [gHours, gCost, gPaid, gCashPaid, gDiscountPaid] = [0, 0, 0, 0, 0];
         const compData = {};
 
         // Kayıtları Mesai Başlangıç Tarihine Göre Sıralama
@@ -2708,14 +2815,20 @@
         records.forEach((r) => {
             gHours += parseFloat(r.durationHours || 0);
             gCost += parseFloat(r.totalAmount || 0);
-            if (!compData[r.companyName]) compData[r.companyName] = { cost: 0, paid: 0 };
+            if (!compData[r.companyName]) compData[r.companyName] = { cost: 0, paid: 0, cashPaid: 0, discountPaid: 0 };
             compData[r.companyName].cost += parseFloat(r.totalAmount || 0);
         });
 
         payments.forEach(p => {
-            gPaid += parseFloat(p.amount || 0);
-            if (!compData[p.companyName]) compData[p.companyName] = { cost: 0, paid: 0 };
-            compData[p.companyName].paid += parseFloat(p.amount || 0);
+            const parsed = parsePaymentAmounts(p);
+            gPaid += parsed.total;
+            gDiscountPaid += parsed.disc;
+            gCashPaid += parsed.cash;
+
+            if (!compData[p.companyName]) compData[p.companyName] = { cost: 0, paid: 0, cashPaid: 0, discountPaid: 0 };
+            compData[p.companyName].paid += parsed.total;
+            compData[p.companyName].discountPaid += parsed.disc;
+            compData[p.companyName].cashPaid += parsed.cash;
         });
 
         // Sayfalama Dilimleme Hesaplaması
@@ -2758,7 +2871,15 @@
 
         document.getElementById('totalHours').innerText = gHours.toFixed(2);
         document.getElementById('totalCost').innerText = gCost.toLocaleString('tr-TR', {minimumFractionDigits:2}) + " TL";
-        document.getElementById('totalPaid').innerText = gPaid.toLocaleString('tr-TR', {minimumFractionDigits:2}) + " TL";
+        if (document.getElementById('totalCashPaid')) {
+            document.getElementById('totalCashPaid').innerText = gCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2}) + " TL";
+        }
+        if (document.getElementById('totalDiscountPaid')) {
+            document.getElementById('totalDiscountPaid').innerText = gDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2}) + " TL";
+        }
+        if (document.getElementById('totalPaid')) {
+            document.getElementById('totalPaid').innerText = gPaid.toLocaleString('tr-TR', {minimumFractionDigits:2}) + " TL";
+        }
         document.getElementById('totalBalance').innerText = (gCost - gPaid).toLocaleString('tr-TR', {minimumFractionDigits:2}) + " TL";
 
         const compContainer = document.getElementById('companySummaries');
@@ -2774,7 +2895,8 @@
                 <div class="company-card">
                     <h4>${comp}</h4>
                     <div class="val-row"><span>Toplam Hak Ediş:</span> <span>${data.cost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span></div>
-                    <div class="val-row"><span>Toplam Tahsilat / İskonto:</span> <span class="val-credit">${data.paid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span></div>
+                    <div class="val-row"><span>Nakit / Banka Tahsilatı:</span> <span class="val-credit">${(data.cashPaid || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span></div>
+                    ${(data.discountPaid > 0) ? `<div class="val-row"><span>Yapılan İskonto / İndirim:</span> <span style="color:#b45309; font-weight:700;">-${data.discountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span></div>` : ''}
                     <div class="val-row" style="font-weight:bold; color:${statusColor}">
                         <span>Güncel Durum:</span> <span>${statusText}</span>
                     </div>
@@ -2847,22 +2969,58 @@
         setModalSize('lg');
         document.getElementById('modalTitle').innerText = `${comp} - Cari Hesap Dökümü`;
         const safeCompEscaped = comp.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+
+        let cCost = 0;
+        let cCashPaid = 0;
+        let cDiscPaid = 0;
+
+        records.filter(r => r.companyName === comp).forEach(r => {
+            cCost += parseFloat(r.totalAmount || 0);
+        });
+        payments.filter(p => p.companyName === comp).forEach(p => {
+            const parsed = parsePaymentAmounts(p);
+            cDiscPaid += parsed.disc;
+            cCashPaid += parsed.cash;
+        });
+        const cBal = cCost - (cCashPaid + cDiscPaid);
+
         let html = `
-        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 14px; border-radius: 4px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 14px; border-radius: 4px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
             <span style="font-size: 0.88rem; font-weight: 600; color: var(--primary);">📄 Detaylı Kurumsal Ekstre & Fatura</span>
             <div style="display:flex; gap:6px;">
                 <button class="btn-primary" style="padding: 6px 12px; font-size: 0.82rem;" onclick="openInvoiceManager('${safeCompEscaped}')">🧾 Fatura Yönetimi</button>
                 <button class="btn-success" style="padding: 6px 12px; font-size: 0.82rem;" onclick="generateCompanyPDF('${safeCompEscaped}')">📄 PDF Ekstresi İndir</button>
             </div>
         </div>
-        <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+
+        <!-- CARİ FİRMA FİNANSAL ÖZET KARTLARI -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 14px;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px 12px; border-radius: 4px; text-align: center;">
+                <div style="font-size: 0.72rem; color: #1e40af; font-weight: 700; text-transform: uppercase;">Toplam Hak Ediş</div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: #1e3a8a; margin-top: 2px;">${cCost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 12px; border-radius: 4px; text-align: center;">
+                <div style="font-size: 0.72rem; color: #166534; font-weight: 700; text-transform: uppercase;">Nakit Tahsilat</div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: #166534; margin-top: 2px;">${cCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+            </div>
+            <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 8px 12px; border-radius: 4px; text-align: center;">
+                <div style="font-size: 0.72rem; color: #92400e; font-weight: 700; text-transform: uppercase;">Yapılan İskonto / İndirim</div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: #b45309; margin-top: 2px;">${cDiscPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 4px; text-align: center;">
+                <div style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase;">Kalan Net Bakiye</div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: ${cBal > 0 ? '#991b1b' : (cBal < 0 ? '#166534' : '#334155')}; margin-top: 2px;">${cBal.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
             <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
                 <thead style="position:sticky; top:0; background:#f1f5f9; z-index:2;">
                     <tr>
                         <th style="width:125px; white-space:nowrap; padding:8px 10px;">İşlem Tarihi</th>
                         <th style="padding:8px 10px;">Açıklama / Belge</th>
                         <th style="width:120px; text-align:right; white-space:nowrap; padding:8px 10px;">Tutar</th>
-                        <th style="width:130px; white-space:nowrap; padding:8px 10px;">İşlem Tipi</th>
+                        <th style="width:140px; white-space:nowrap; padding:8px 10px;">İşlem Tipi</th>
                         <th style="width:140px; text-align:center; white-space:nowrap; padding:8px 10px;">Fatura Durumu</th>
                         <th style="width:60px; text-align:center; white-space:nowrap; padding:8px 10px;">Sil</th>
                     </tr>
@@ -2879,21 +3037,22 @@
                 <td style="white-space:nowrap; padding:7px 10px;">${r.formattedStart}</td>
                 <td style="word-break:break-word; padding:7px 10px;">${r.machineName} (${r.durationHours} Saat)${noteText}</td>
                 <td style="color:var(--danger); font-weight:bold; text-align:right; white-space:nowrap; padding:7px 10px;">+${parseFloat(r.totalAmount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
-                <td style="white-space:nowrap; padding:7px 10px;">Hak Ediş İşlemi</td>
+                <td style="white-space:nowrap; padding:7px 10px;"><span style="background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; padding:2px 6px; border-radius:4px; font-size:0.78rem; font-weight:700;">🚜 Hak Ediş</span></td>
                 <td style="text-align:center; white-space:nowrap; padding:7px 10px;">${invBadge}</td>
                 <td style="text-align:center; padding:7px 10px;"><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteRecord(${r.id})">Sil</button></td>
             </tr>`;
         });
         payments.filter(p => p.companyName === comp).forEach(p => {
             hasData = true;
-            const isDisc = p.note && (p.note.includes('İSKONTO') || p.note.includes('İNDİRİM'));
+            const parsed = parsePaymentAmounts(p);
+            const isDisc = parsed.isDisc;
             const invBadge = (p.invoiceIssued || p.invoiceNo) ? `<span class="badge-invoice-done">🟢 ${p.invoiceNo || 'Kesildi'}</span>` : `<span class="badge-invoice-pending">⏳ Bekliyor</span>`;
 
             html += `<tr>
                 <td style="white-space:nowrap; padding:7px 10px;">${p.date}</td>
                 <td style="word-break:break-word; padding:7px 10px;">${p.note}</td>
-                <td style="color:var(--success); font-weight:bold; text-align:right; white-space:nowrap; padding:7px 10px;">-${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
-                <td style="white-space:nowrap; padding:7px 10px;">${isDisc ? '🏷️ İskonto Mahsubu' : '💳 Tahsilat'}</td>
+                <td style="color:${isDisc ? '#b45309' : 'var(--success)'}; font-weight:bold; text-align:right; white-space:nowrap; padding:7px 10px;">-${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td style="white-space:nowrap; padding:7px 10px;"><span style="background:${isDisc ? '#fef3c7' : '#dcfce7'}; color:${isDisc ? '#b45309' : '#15803d'}; border:1px solid ${isDisc ? '#fde68a' : '#86efac'}; padding:2px 6px; border-radius:4px; font-size:0.78rem; font-weight:700;">${isDisc ? '🏷️ İskonto Mahsubu' : '💳 Nakit Tahsilat'}</span></td>
                 <td style="text-align:center; white-space:nowrap; padding:7px 10px;">${invBadge}</td>
                 <td style="text-align:center; padding:7px 10px;"><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deletePayment(${p.id})">Sil</button></td>
             </tr>`;
@@ -2951,8 +3110,13 @@
         });
 
         let totalTahsilat = 0;
+        let totalCashPaid = 0;
+        let totalDiscountPaid = 0;
         compPayments.forEach(p => {
-            totalTahsilat += parseFloat(p.amount || 0);
+            const parsed = parsePaymentAmounts(p);
+            totalTahsilat += parsed.total;
+            totalDiscountPaid += parsed.disc;
+            totalCashPaid += parsed.cash;
         });
 
         const netBakiye = totalHakEdis - totalTahsilat;
@@ -2979,14 +3143,14 @@
         compPayments.forEach(p => {
             let pDateObj = parseTrDate(p.date);
             let timestamp = pDateObj.getTime();
-            const isDisc = p.note && (p.note.includes('İSKONTO') || p.note.includes('İNDİRİM'));
+            const parsed = parsePaymentAmounts(p);
             ledger.push({
                 dateIso: timestamp,
                 dateStr: p.date,
-                type: isDisc ? 'İSKONTO MAHSUBU' : 'TAHSİLAT / ÖDEME',
+                type: parsed.isDisc ? 'İSKONTO MAHSUBU' : 'TAHSİLAT / ÖDEME',
                 details: p.note || 'Tahsilat Belgesi',
                 debit: 0,
-                credit: parseFloat(p.amount || 0)
+                credit: parsed.total
             });
         });
 
@@ -3026,22 +3190,26 @@
             </div>
 
             <!-- ÖZET İSTATİSTİK KUTULARI -->
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px;">
-                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Toplam Mesai Süresi</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #1e3a8a; margin-top: 4px;">${totalHours.toFixed(2)} Saat</div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 25px;">
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Toplam Mesai Süresi</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #1e3a8a; margin-top: 4px;">${totalHours.toFixed(2)} Saat</div>
                 </div>
-                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #991b1b; font-weight: bold; text-transform: uppercase;">Toplam Hak Ediş (Borç)</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #991b1b; margin-top: 4px;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9px; color: #991b1b; font-weight: bold; text-transform: uppercase;">Toplam Hak Ediş (Borç)</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #991b1b; margin-top: 4px;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Toplam Tahsilat / İskonto</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #166534; margin-top: 4px;">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9px; color: #166534; font-weight: bold; text-transform: uppercase;">Nakit / Banka Tahsilatı</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #166534; margin-top: 4px;">${totalCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
-                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #c2410c; font-weight: bold; text-transform: uppercase;">Kalan Net Bakiye</div>
-                    <div style="font-size: 16px; font-weight: bold; color: ${bakiyeRenk}; margin-top: 4px;">${netBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9px; color: #92400e; font-weight: bold; text-transform: uppercase;">Yapılan İskonto / İndirim</div>
+                    <div style="font-size: 15px; font-weight: bold; color: #b45309; margin-top: 4px;">${totalDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                </div>
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9px; color: #c2410c; font-weight: bold; text-transform: uppercase;">Kalan Net Bakiye</div>
+                    <div style="font-size: 15px; font-weight: bold; color: ${bakiyeRenk}; margin-top: 4px;">${netBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
             </div>
 
@@ -3118,18 +3286,19 @@
             pdfHtml += `<tr><td colspan="4" style="padding: 12px; text-align: center; border: 1px solid #cbd5e1; color: #64748b;">Firmaya ait tahsilat / iskonto kaydı bulunmamaktadır.</td></tr>`;
         } else {
             compPayments.forEach((p, idx) => {
+                const isDisc = p.note && (p.note.includes('İSKONTO') || p.note.includes('İNDİRİM'));
                 pdfHtml += `
                         <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: 600;">${p.date}</td>
-                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1;">${p.note}</td>
-                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #166534;">+${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1;">${isDisc ? `<strong style="color:#b45309;">[İSKONTO MAHSUBU]</strong> ` : `<strong style="color:#15803d;">[NAKİT/HAVALE]</strong> `}${p.note}</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: ${isDisc ? '#b45309' : '#166534'};">-${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                         </tr>`;
             });
 
             pdfHtml += `
                         <tr style="background: #e2e8f0; font-weight: bold; font-size: 11px;">
-                            <td colspan="3" style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">TAHSİLAT / İSKONTO GENEL TOPLAMI:</td>
+                            <td colspan="3" style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">NAKİT TAHSİLAT: ${totalCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ | YAPILAN İSKONTO: ${totalDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ | CARİDEN DÜŞÜLEN TOPLAM:</td>
                             <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #166534;">+${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                         </tr>`;
         }
@@ -3492,6 +3661,8 @@
 
         let totalCost = 0;
         let totalPaid = 0;
+        let totalCashPaid = 0;
+        let totalDiscountPaid = 0;
         let invoicedCost = 0;
         let pendingCost = 0;
 
@@ -3506,7 +3677,10 @@
         });
 
         filteredPayments.forEach(p => {
-            totalPaid += parseFloat(p.amount || 0);
+            const parsed = parsePaymentAmounts(p);
+            totalPaid += parsed.total;
+            totalDiscountPaid += parsed.disc;
+            totalCashPaid += parsed.cash;
         });
 
         let allItems = [];
@@ -3525,7 +3699,8 @@
         });
 
         filteredPayments.forEach(p => {
-            const isDisc = p.note && (p.note.includes('İSKONTO') || p.note.includes('İNDİRİM'));
+            const parsed = parsePaymentAmounts(p);
+            const isDisc = parsed.isDisc;
             allItems.push({
                 rawId: p.id,
                 kind: 'payment',
@@ -3595,9 +3770,13 @@
                         <div style="font-size:0.75rem; color:#92400e; font-weight:700; text-transform:uppercase;">Fatura Bekleyen</div>
                         <div style="font-size:1.15rem; font-weight:800; color:#b45309; margin-top:2px;">${pendingCost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                     </div>
-                    <div style="background:#faf5ff; border:1px solid #e9d5ff; padding:10px; border-radius:6px; text-align:center;">
-                        <div style="font-size:0.75rem; color:#6b21a8; font-weight:700; text-transform:uppercase;">Toplam Tahsilat</div>
-                        <div style="font-size:1.15rem; font-weight:800; color:#6b21a8; margin-top:2px;">${totalPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; text-align:center;">
+                        <div style="font-size:0.75rem; color:#166534; font-weight:700; text-transform:uppercase;">Nakit / Banka Tahsilatı</div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#166534; margin-top:2px;">${totalCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                    </div>
+                    <div style="background:#fef3c7; border:1px solid #fcd34d; padding:10px; border-radius:6px; text-align:center;">
+                        <div style="font-size:0.75rem; color:#92400e; font-weight:700; text-transform:uppercase;">Yapılan İskonto / İndirim</div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#b45309; margin-top:2px;">${totalDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                     </div>
                 </div>
 
@@ -3818,14 +3997,20 @@
             totalHours += parseFloat(r.durationHours || 0);
         });
 
+        let totalCashPaid = 0, totalDiscountPaid = 0;
         payments.forEach(p => {
-            if (!compData[p.companyName]) compData[p.companyName] = { hours: 0, cost: 0, paid: 0 };
-            compData[p.companyName].paid += parseFloat(p.amount || 0);
-            totalTahsilat += parseFloat(p.amount || 0);
+            const parsed = parsePaymentAmounts(p);
+            if (!compData[p.companyName]) compData[p.companyName] = { hours: 0, cost: 0, paid: 0, cashPaid: 0, discountPaid: 0 };
+            compData[p.companyName].paid += parsed.total;
+            compData[p.companyName].cashPaid += parsed.cash;
+            compData[p.companyName].discountPaid += parsed.disc;
+            totalTahsilat += parsed.total;
+            totalCashPaid += parsed.cash;
+            totalDiscountPaid += parsed.disc;
         });
 
         savedCompanies.forEach(c => {
-            if (!compData[c]) compData[c] = { hours: 0, cost: 0, paid: 0 };
+            if (!compData[c]) compData[c] = { hours: 0, cost: 0, paid: 0, cashPaid: 0, discountPaid: 0 };
         });
 
         // TASARIMLI HTML TABLO OLUŞTURMA
@@ -3871,7 +4056,9 @@
                         <th>Firma / Müşteri Ünvanı</th>
                         <th>Toplam Çalışma (Saat)</th>
                         <th>Toplam Hak Ediş (TL)</th>
-                        <th>Toplam Tahsilat / İskonto (TL)</th>
+                        <th>Nakit Tahsilat (TL)</th>
+                        <th>Yapılan İskonto (TL)</th>
+                        <th>Toplam Düşülen (TL)</th>
                         <th>Kalan Bakiye (TL)</th>
                         <th>Güncel Cari Durum</th>
                     </tr>
@@ -3887,6 +4074,8 @@
                 <td><strong>${comp}</strong></td>
                 <td>${data.hours.toFixed(2)} Saat</td>
                 <td>${data.cost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td style="color:#166534; font-weight:600;">${(data.cashPaid || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td style="color:#b45309; font-weight:600;">${(data.discountPaid || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                 <td class="val-credit">${data.paid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                 <td class="${durumClass}">${bakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                 <td class="${durumClass}">${durumText}</td>
@@ -3898,6 +4087,8 @@
             <td>GENEL TOPLAM / SİSTEM GENEL BAKİYESİ</td>
             <td>${totalHours.toFixed(2)} Saat</td>
             <td>${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td style="color:#166534;">${totalCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+            <td style="color:#b45309;">${totalDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             <td class="val-credit">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             <td class="${genBakiye > 0 ? 'val-debt' : 'val-credit'}">${genBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             <td>${genBakiye > 0 ? 'Sistem Borçlu' : 'Sistem Alacaklı'}</td>
@@ -3962,7 +4153,7 @@
         html += `</tbody>
         </table>
 
-        <!-- TABLO 3: TAHSİLAT HAREKETLERİ -->
+        <!-- TABLO 3: TAHSİLAT VE İSKONTO HAREKETLERİ -->
         <div class="section-header">💳 DETAYLI TAHSİLAT VE İSKONTO HAREKETLERİ</div>
         <table>
             <thead>
@@ -3970,14 +4161,16 @@
                     <th>Sıra No</th>
                     <th>Firma Ünvanı</th>
                     <th>İşlem Tarihi</th>
-                    <th>Cariden Düşülen Tutar (TL)</th>
+                    <th>İşlem Türü</th>
                     <th>Açıklama / Dekont / İskonto Detayı</th>
+                    <th>Cariden Düşülen Tutar (TL)</th>
                 </tr>
             </thead>
             <tbody>`;
 
         let paySum = 0;
         payments.forEach((p, idx) => {
+            const parsed = parsePaymentAmounts(p);
             const amt = parseFloat(p.amount || 0);
             paySum += amt;
 
@@ -3985,18 +4178,18 @@
                 <td>${idx + 1}</td>
                 <td><strong>${p.companyName}</strong></td>
                 <td>${p.date}</td>
-                <td class="val-credit"><strong>+${amt.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong></td>
+                <td><span style="font-weight:bold; color:${parsed.isDisc ? '#b45309' : '#166534'};">${parsed.isDisc ? '🏷️ İskonto Mahsubu' : '💳 Nakit Tahsilat'}</span></td>
                 <td>${p.note}</td>
+                <td style="color:${parsed.isDisc ? '#b45309' : '#166534'}; font-weight:bold;">${amt.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             </tr>`;
         });
 
         if(payments.length === 0) {
-            html += `<tr><td colspan="5" style="text-align:center;">Sistemde kayıtlı tahsilat verisi bulunmamaktadır.</td></tr>`;
+            html += `<tr><td colspan="6" style="text-align:center;">Sistemde kayıtlı tahsilat verisi bulunmamaktadır.</td></tr>`;
         } else {
             html += `<tr class="total-row">
-                <td colspan="3">TOPLAM TAHSİLAT / İSKONTO</td>
-                <td class="val-credit">+${paySum.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
-                <td>-</td>
+                <td colspan="5">TOPLAM CARİDEN DÜŞÜLEN (Nakit: ${totalCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ | İskonto: ${totalDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺)</td>
+                <td class="val-credit">${paySum.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
             </tr>`;
         }
 
@@ -4067,14 +4260,20 @@
             totalHours += parseFloat(r.durationHours || 0);
         });
 
+        let totalCashPaid = 0, totalDiscountPaid = 0;
         payments.forEach(p => {
-            if (!compData[p.companyName]) compData[p.companyName] = { hours: 0, cost: 0, paid: 0 };
-            compData[p.companyName].paid += parseFloat(p.amount || 0);
-            totalTahsilat += parseFloat(p.amount || 0);
+            const parsed = parsePaymentAmounts(p);
+            if (!compData[p.companyName]) compData[p.companyName] = { hours: 0, cost: 0, paid: 0, cashPaid: 0, discountPaid: 0 };
+            compData[p.companyName].paid += parsed.total;
+            compData[p.companyName].cashPaid += parsed.cash;
+            compData[p.companyName].discountPaid += parsed.disc;
+            totalTahsilat += parsed.total;
+            totalCashPaid += parsed.cash;
+            totalDiscountPaid += parsed.disc;
         });
 
         savedCompanies.forEach(c => {
-            if (!compData[c]) compData[c] = { hours: 0, cost: 0, paid: 0 };
+            if (!compData[c]) compData[c] = { hours: 0, cost: 0, paid: 0, cashPaid: 0, discountPaid: 0 };
         });
 
         const genBakiye = totalHakEdis - totalTahsilat;
@@ -4096,23 +4295,27 @@
                 </div>
             </div>
 
-            <!-- ÖZET İSTATİSTİK KUTULARI -->
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px;">
-                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Toplam Mesai</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #1e3a8a; margin-top: 4px;">${totalHours.toFixed(2)} Saat</div>
+            <!-- ÖZET İSTATİSTİK KUTULARI (5'Lİ FİNANSAL BAR) -->
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 25px;">
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9.5px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Toplam Mesai</div>
+                    <div style="font-size: 14px; font-weight: bold; color: #1e3a8a; margin-top: 4px;">${totalHours.toFixed(2)} Saat</div>
                 </div>
-                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #991b1b; font-weight: bold; text-transform: uppercase;">Toplam Hak Ediş</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #991b1b; margin-top: 4px;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 10px 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9.5px; color: #991b1b; font-weight: bold; text-transform: uppercase;">Toplam Hak Ediş</div>
+                    <div style="font-size: 14px; font-weight: bold; color: #991b1b; margin-top: 4px;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Toplam Tahsilat / İskonto</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #166534; margin-top: 4px;">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9.5px; color: #166534; font-weight: bold; text-transform: uppercase;">Nakit Tahsilat</div>
+                    <div style="font-size: 14px; font-weight: bold; color: #166534; margin-top: 4px;">${totalCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
-                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #c2410c; font-weight: bold; text-transform: uppercase;">Genel Net Bakiye</div>
-                    <div style="font-size: 16px; font-weight: bold; color: ${genBakiye > 0 ? '#991b1b' : '#166534'}; margin-top: 4px;">${genBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 10px 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9.5px; color: #92400e; font-weight: bold; text-transform: uppercase;">Yapılan İskonto</div>
+                    <div style="font-size: 14px; font-weight: bold; color: #b45309; margin-top: 4px;">${totalDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                </div>
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 10px 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 9.5px; color: #c2410c; font-weight: bold; text-transform: uppercase;">Genel Net Bakiye</div>
+                    <div style="font-size: 14px; font-weight: bold; color: ${genBakiye > 0 ? '#991b1b' : '#166534'}; margin-top: 4px;">${genBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
             </div>
 
@@ -4127,7 +4330,8 @@
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Firma / Müşteri Ünvanı</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Çalışma (Saat)</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Hak Ediş (TL)</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Tahsilat / İsk. (TL)</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Nakit Tahsilat (TL)</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Yapılan İskonto (TL)</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Bakiye (TL)</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;">Cari Durum</th>
                         </tr>
@@ -4144,7 +4348,8 @@
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; font-weight: 600;">${comp}</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right;">${data.hours.toFixed(2)} Saat</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; color: #991b1b;">${data.cost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
-                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; color: #166534;">${data.paid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; color: #166534;">${(data.cashPaid || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; color: #b45309;">${(data.discountPaid || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: ${durumRenk};">${bakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: ${durumRenk};">${durumText}</td>
                         </tr>`;
@@ -4155,7 +4360,8 @@
                             <td style="padding: 8px; border: 1px solid #cbd5e1;">GENEL SİSTEM TOPLAMI</td>
                             <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #1e3a8a;">${totalHours.toFixed(2)} Saat</td>
                             <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #991b1b;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
-                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #166534;">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #166534;">${totalCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #b45309;">${totalDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                             <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: ${genBakiye > 0 ? '#991b1b' : '#166534'};">${genBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                             <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;">-</td>
                         </tr>
@@ -4239,15 +4445,23 @@
             pdfHtml += `<tr><td colspan="5" style="padding: 12px; text-align: center; border: 1px solid #cbd5e1; color: #64748b;">Tahsilat kaydı bulunmamaktadır.</td></tr>`;
         } else {
             payments.forEach((p, idx) => {
+                const parsed = parsePaymentAmounts(p);
+                const isDisc = parsed.isDisc;
                 pdfHtml += `
                         <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; font-weight: 600;">${p.companyName}</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center;">${p.date}</td>
-                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1;">${p.note}</td>
-                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #166534;">+${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1;">${isDisc ? '<strong style="color:#b45309;">[İSKONTO MAHSUBU]</strong> ' : '<strong style="color:#166534;">[NAKİT/HAVALE]</strong> '}${p.note}</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: ${isDisc ? '#b45309' : '#166534'};">-${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                         </tr>`;
             });
+
+            pdfHtml += `
+                        <tr style="background: #e2e8f0; font-weight: bold; font-size: 11px;">
+                            <td colspan="4" style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">NAKİT TAHSİLAT: ${totalCashPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ | YAPILAN İSKONTO: ${totalDiscountPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ | CARİDEN DÜŞÜLEN TOPLAM:</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #166534;">-${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                        </tr>`;
         }
 
         pdfHtml += `
