@@ -238,13 +238,88 @@
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             margin-bottom: 15px;
         }
-        .company-select-group {
-            grid-column: 1 / -1;
-            max-width: 50%;
+        @media (max-width: 900px) {
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .payment-form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .payment-form-grid .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .payment-form-grid .form-group label {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            min-height: 20px;
+            line-height: 20px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .payment-form-grid input,
+        .payment-form-grid select {
+            box-sizing: border-box;
+            height: 42px;
+            min-height: 42px;
+            width: 100%;
+        }
+        @media (max-width: 900px) {
+            .payment-form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .payment-form-grid .span-2-desk {
+                grid-column: 1 / -1 !important;
+            }
+        }
+        @media (max-width: 600px) {
+            .payment-form-grid {
+                grid-template-columns: 1fr;
+            }
+            .payment-form-grid .form-group {
+                grid-column: 1 / -1 !important;
+            }
+        }
+        .badge-invoice-done {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-invoice-pending {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fde68a;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
         .form-group {
             display: flex;
@@ -255,6 +330,11 @@
             font-weight: 600;
             color: var(--text-muted);
             font-size: 0.85rem;
+            min-height: 20px;
+            line-height: 20px;
+            margin: 0;
+            display: flex;
+            align-items: center;
         }
 
         input, select {
@@ -264,7 +344,9 @@
             color: var(--text-main);
             background-color: #fff;
             border-radius: 4px;
+            height: 42px;
             min-height: 42px;
+            box-sizing: border-box;
             width: 100%;
         }
         input:focus, select:focus {
@@ -282,7 +364,9 @@
             cursor: pointer;
             border-radius: 4px;
             text-align: center;
+            height: 42px;
             min-height: 42px;
+            box-sizing: border-box;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -309,8 +393,22 @@
             display: flex;
             gap: 6px;
             align-items: center;
+            width: 100%;
         }
-        .input-with-btn select { flex: 1; }
+        .input-with-btn select {
+            flex: 1;
+            min-width: 0;
+            height: 42px;
+            box-sizing: border-box;
+        }
+        .input-with-btn button {
+            height: 42px;
+            min-height: 42px;
+            padding: 0 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
 
         .form-actions {
             display: flex;
@@ -429,34 +527,51 @@
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(2px);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             padding: 15px;
+            box-sizing: border-box;
         }
         .modal-card {
             background: var(--bg-card);
-            width: 100%;
-            max-width: 600px;
+            width: 96%;
+            max-width: 1050px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 10px 15px rgba(0,0,0,0.2);
-            max-height: 90vh;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-height: 92vh;
             display: flex;
             flex-direction: column;
-            border-radius: 6px;
+            border-radius: 8px;
             overflow: hidden;
+            box-sizing: border-box;
+            transition: max-width 0.2s ease-in-out;
+        }
+        .modal-card.modal-lg {
+            max-width: 1150px;
+            width: 96%;
+        }
+        .modal-card.modal-md {
+            max-width: 820px;
+            width: 96%;
+        }
+        .modal-card.modal-sm {
+            max-width: 600px;
+            width: 96%;
         }
         .modal-header {
             background: var(--primary);
             color: white;
-            padding: 15px 20px;
+            padding: 14px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
         }
-        .modal-header h3 { font-size: 1.05rem; margin: 0; text-transform: uppercase; }
+        .modal-header h3 { font-size: 1.05rem; margin: 0; text-transform: uppercase; font-weight: 700; }
         .btn-close {
             background: transparent;
             color: white;
@@ -471,10 +586,29 @@
             justify-content: center;
         }
         .modal-body {
-            padding: 20px;
+            padding: 18px 22px;
             overflow-y: auto;
+            overflow-x: hidden;
         }
-        .manage-list { list-style: none; border: 1px solid var(--border-color); border-radius: 4px; }
+        .modal-body .table-responsive {
+            margin-bottom: 0;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            width: 100%;
+        }
+        .modal-body table {
+            width: 100%;
+            table-layout: auto;
+        }
+        .modal-body th, 
+        .modal-body td {
+            white-space: normal;
+            word-break: break-word;
+            padding: 9px 10px;
+            vertical-align: middle;
+        }
+        .manage-list { list-style: none; border: 1px solid var(--border-color); border-radius: 6px; margin: 0; padding: 0; }
         .manage-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid var(--border-color); }
         .manage-list li:last-child { border-bottom: none; }
 
@@ -498,9 +632,6 @@
             .header-bar button {
                 width: 100%;
             }
-            .company-select-group {
-                max-width: 100%;
-            }
             .stat-bar { 
                 grid-template-columns: repeat(2, 1fr);
                 gap: 12px; 
@@ -521,6 +652,18 @@
                 font-size: 0.88rem;
                 flex: 1;
                 text-align: center;
+            }
+            .modal-overlay {
+                padding: 6px;
+            }
+            .modal-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: 96vh;
+                border-radius: 6px;
+            }
+            .modal-body {
+                padding: 12px 14px;
             }
         }
 
@@ -659,9 +802,16 @@
             </div>
         </div>
         
-        <div class="tab-container">
-            <button class="tab-btn active" onclick="switchTab('workTab')">Çalışma Kaydı Ekle</button>
-            <button class="tab-btn" onclick="switchTab('paymentTab')">Tahsilat / Ödeme İşle</button>
+        <div class="tab-container" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; gap:5px;">
+                <button class="tab-btn active" onclick="switchTab('workTab')">Çalışma Kaydı Ekle</button>
+                <button class="tab-btn" onclick="switchTab('paymentTab')">Tahsilat / Ödeme İşle</button>
+            </div>
+            <div style="margin-bottom: 2px;">
+                <button type="button" class="btn-primary" onclick="openInvoiceManager()" style="background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%); padding: 8px 16px; font-size: 0.88rem; box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25); display:inline-flex; align-items:center; gap:6px;">
+                    <span>🧾 Fatura & Faturalandırma Yönetimi</span>
+                </button>
+            </div>
         </div>
 
         <!-- ÇALIŞMA FORMU -->
@@ -670,7 +820,7 @@
             <form id="trackingForm">
                 <div class="form-grid">
                     <!-- FİRMA SEÇİMİ -->
-                    <div class="form-group company-select-group">
+                    <div class="form-group">
                         <label>Firma / Müşteri Ünvanı</label>
                         <div class="input-with-btn">
                             <select id="companyName" required></select>
@@ -716,7 +866,7 @@
                     <!-- CANLI HESAPLAMA -->
                     <div class="live-calc-box">
                         <span>⏱️ Hesaplanan Süre: <span id="liveHours">0.00</span> Saat</span>
-                        <span>💰 Tahmini Hak Ediş: <span id="liveTotal">0.00</span> TL</span>
+                        <span>💰 Toplam Tutar: <span id="liveTotal">0.00</span> TL</span>
                     </div>
                 </div>
 
@@ -741,30 +891,82 @@
 
         <!-- ÖDEME FORMU -->
         <div id="paymentTab" class="panel" style="display: none;">
-            <div class="panel-title">💳 Tahsilat Verisi Girişi</div>
+            <div class="panel-title">💳 Tahsilat & İskontolu Ödeme Girişi</div>
+
+            <!-- SEÇİLEN FİRMA GÜNCEL BORÇ & OTOMATİK BORÇ ÇEKME KARTI -->
+            <div id="companyBalanceInfoBox" style="margin-bottom: 16px; padding: 12px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #1e3a8a; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px;">🏢 Seçilen Firmanın Güncel Bakiyesi</span>
+                    <div id="companyCurrentBalanceDisplay" style="font-size: 1.15rem; font-weight: 800; color: #991b1b; margin-top: 3px;">
+                        Borç Bakiye: 0.00 TL
+                    </div>
+                </div>
+                <button type="button" class="btn-primary" id="btnFetchCurrentDebt" onclick="fetchAndFillCurrentDebt()" style="padding: 8px 16px; font-size: 0.88rem; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(30, 58, 138, 0.25); cursor: pointer;">
+                    <span>⚡ Güncel Borcu Çek (Kutuya Aktar)</span>
+                </button>
+            </div>
+
             <form id="paymentForm">
-                <div class="form-grid">
+                <div class="payment-form-grid">
+                    <!-- Satır 1: Temel Bilgiler -->
                     <div class="form-group">
                         <label>Firma / Müşteri Ünvanı</label>
-                        <div class="input-with-btn">
-                            <select id="paymentCompany" required></select>
-                        </div>
+                        <select id="paymentCompany" required onchange="updatePaymentCompanyBalanceDisplay()"></select>
                     </div>
                     <div class="form-group">
-                        <label>Tahsilat Tutarı (TL)</label>
-                        <input type="number" id="paymentAmount" step="0.01" min="0" required placeholder="0.00">
+                        <label>İşlem Türü</label>
+                        <select id="paymentType" onchange="onPaymentTypeChange()">
+                            <option value="nakit">💳 Standart Tahsilat (Nakit / Havale)</option>
+                            <option value="iskontolu">🏷️ İskontolu Tahsilat (Nakit + İskonto)</option>
+                            <option value="mahsup">✂️ Yalnızca İskonto / Fiyat İndirimi</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>İşlem Tarihi</label>
                         <input type="date" id="paymentDate" required>
                     </div>
-                    <div class="form-group">
-                        <label>Açıklama / Belge No</label>
-                        <input type="text" id="paymentNote" placeholder="Örn: Dekont No: 1234">
+
+                    <!-- Satır 2: Tutarlar ve Açıklama (Simetrik ve Tam Hizalı) -->
+                    <div class="form-group" id="paymentAmountGroup">
+                        <label id="paymentAmountLabel">Tahsil Edilen Tutar (TL)</label>
+                        <input type="number" id="paymentAmount" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group" id="paymentDiscountGroup" style="display: none;">
+                        <label id="paymentDiscountLabel" style="color: #b45309;">Uygulanan İskonto (TL)</label>
+                        <input type="number" id="paymentDiscount" step="0.01" min="0" placeholder="0.00" style="border-color: #f59e0b;">
+                    </div>
+                    <div class="form-group span-2-desk" id="paymentNoteGroup" style="grid-column: span 2;">
+                        <label id="paymentNoteLabel">Açıklama / Belge No / Not</label>
+                        <input type="text" id="paymentNote" placeholder="Örn: Dekont No: 1234 veya İskonto Anlaşması">
+                    </div>
+
+                    <!-- FATURA BİLGİSİ SEÇENEĞİ -->
+                    <div style="grid-column: 1 / -1; margin-top: 4px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; color: #1e3a8a; margin: 0; user-select: none;">
+                            <input type="checkbox" id="paymentInvoiceIssued" onchange="togglePaymentInvoiceFields()" style="width: 18px; height: 18px; cursor: pointer; min-height: auto;">
+                            <span>📄 Bu Tahsilatın Faturası Kesildi mi? (Fatura No & Tarih Belirt)</span>
+                        </label>
+                        <div id="paymentInvoiceFields" style="display: none; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
+                            <div class="form-group">
+                                <label style="font-size:0.8rem; color:#475569;">e-Fatura / e-Arşiv Numarası</label>
+                                <input type="text" id="paymentInvoiceNo" placeholder="Örn: GIB2026000001234">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.8rem; color:#475569;">Fatura Tarihi</label>
+                                <input type="date" id="paymentInvoiceDate">
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- CARİDEN DÜŞÜLECEK TOPLAM BİLGİ KUTUSU -->
+                <div id="paymentCalcSummary" style="margin: 12px 0; padding: 10px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 0.9rem; color: #166534; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+                    <span>Cariden Düşülecek Toplam Tutar:</span>
+                    <span id="paymentTotalCreditDisplay" style="font-size: 1.1rem; font-weight: 800;">0.00 TL</span>
+                </div>
+
                 <div style="margin-top:10px;">
-                    <button type="submit" class="btn-success">Tahsilatı Onayla ve Kaydet</button>
+                    <button type="submit" id="paymentSubmitBtn" class="btn-success">Tahsilatı Onayla ve Kaydet</button>
                 </div>
             </form>
         </div>
@@ -783,7 +985,7 @@
                             <th>Başlangıç</th>
                             <th>Bitiş</th>
                             <th>Toplam Süre</th>
-                            <th>Hak Ediş Tutarı</th>
+                            <th>Toplam Tutar</th>
                             <th>İşlem</th>
                         </tr>
                     </thead>
@@ -964,48 +1166,56 @@
         },
         async savePasswordHash(hashStr) {
             localStorage.setItem('app_password_hash', hashStr);
-            if (supabaseClient) {
-                try {
-                    await supabaseClient.from('app_settings').upsert({ key: 'password_hash', value: hashStr, updated_at: new Date().toISOString() });
-                } catch (err) { console.error('Supabase savePasswordHash hatasi:', err); }
-            }
         },
         async getCompanies() {
-            let localRaw = localStorage.getItem('companiesList');
+            let localRaw = localStorage.getItem('companiesData');
+            if (!localRaw) localRaw = localStorage.getItem('companiesList');
             let local = localRaw !== null ? JSON.parse(localRaw) : null;
+
             if (supabaseClient) {
                 try {
-                    const { data, error } = await supabaseClient.from('companies').select('name').order('id', { ascending: true });
-                    if (!error && data) {
-                        const dbList = data.map(d => d.name);
-                        if (dbList.length > 0) {
-                            localStorage.setItem('companiesList', JSON.stringify(dbList));
-                            updateDbStatusBadge('online');
-                            return dbList;
-                        } else if (local !== null) {
-                            await this.saveCompanies(local);
-                            updateDbStatusBadge('online');
-                            return local;
-                        }
+                    const { data, error } = await supabaseClient.from('companies').select('*').order('id', { ascending: true });
+                    if (!error && data && data.length > 0) {
+                        const dbList = data.map(d => ({
+                            name: d.name,
+                            invoiceTitle: d.invoice_title || d.invoiceTitle || ''
+                        }));
+                        localStorage.setItem('companiesData', JSON.stringify(dbList));
+                        localStorage.setItem('companiesList', JSON.stringify(dbList.map(c => c.name)));
+                        updateDbStatusBadge('online');
+                        return dbList;
+                    } else if (!error && local !== null) {
+                        await this.saveCompanies(local);
+                        updateDbStatusBadge('online');
+                        return local;
                     }
                 } catch (err) { console.error('getCompanies hatasi:', err); }
             }
             if (local !== null) {
                 updateDbStatusBadge('local');
-                return local;
+                return local.map(c => typeof c === 'object' ? { name: c.name, invoiceTitle: c.invoiceTitle || '' } : { name: c, invoiceTitle: '' });
             }
+            const defaults = defaultCompanies.map(c => ({ name: c, invoiceTitle: '' }));
+            localStorage.setItem('companiesData', JSON.stringify(defaults));
             localStorage.setItem('companiesList', JSON.stringify(defaultCompanies));
             updateDbStatusBadge('local');
-            return defaultCompanies;
+            return defaults;
         },
         async saveCompanies(list) {
             if (!Array.isArray(list)) return;
-            localStorage.setItem('companiesList', JSON.stringify(list));
+            const normalized = list.map(c => typeof c === 'object' ? { name: c.name, invoiceTitle: c.invoiceTitle || '' } : { name: c, invoiceTitle: '' }).filter(c => c.name && c.name.trim());
+            localStorage.setItem('companiesData', JSON.stringify(normalized));
+            localStorage.setItem('companiesList', JSON.stringify(normalized.map(c => c.name)));
+
             if (supabaseClient) {
                 try {
-                    for (const name of list) {
-                        if (name && name.trim()) {
-                            await supabaseClient.from('companies').upsert({ name: name.trim() }, { onConflict: 'name' });
+                    for (const comp of normalized) {
+                        if (comp.name && comp.name.trim()) {
+                            const payload = { name: comp.name.trim(), invoice_title: comp.invoiceTitle || '' };
+                            const { error } = await supabaseClient.from('companies').upsert(payload, { onConflict: 'name' });
+                            if (error && error.message && error.message.includes('invoice_title')) {
+                                await supabaseClient.from('companies').upsert({ name: comp.name.trim() }, { onConflict: 'name' });
+                            }
                         }
                     }
                 } catch (err) { console.error('saveCompanies hatasi:', err); }
@@ -1015,7 +1225,11 @@
             if (!oldName || !newName || oldName === newName) return;
             const idx = savedCompanies.indexOf(oldName);
             if (idx !== -1) savedCompanies[idx] = newName;
-            await this.saveCompanies(savedCompanies);
+            
+            const cIdx = companiesData.findIndex(c => (typeof c === 'object' ? c.name : c) === oldName);
+            if (cIdx !== -1) companiesData[cIdx].name = newName;
+
+            await this.saveCompanies(companiesData);
 
             if (supabaseClient) {
                 try {
@@ -1057,7 +1271,7 @@
                     if (!error && data && data.length > 0) {
                         const dbList = data.map(d => ({
                             name: d.name,
-                            defaultRate: d.default_rate ? Number(d.default_rate) : 0,
+                            defaultRate: d.default_rate !== undefined && d.default_rate !== null ? Number(d.default_rate) : 0,
                             defaultOperator: d.default_operator || ''
                         }));
                         localStorage.setItem('machinesData', JSON.stringify(dbList));
@@ -1073,36 +1287,29 @@
             }
             if (local !== null) {
                 updateDbStatusBadge('local');
-                const norm = local.map(m => typeof m === 'string' ? { name: m, defaultRate: 0, defaultOperator: '' } : m);
-                return norm;
+                return local.map(m => typeof m === 'object' ? m : { name: m, defaultRate: 0, defaultOperator: '' });
             }
             const defaults = defaultMachines.map(m => ({ name: m, defaultRate: 0, defaultOperator: '' }));
             localStorage.setItem('machinesData', JSON.stringify(defaults));
-            localStorage.setItem('machinesList', JSON.stringify(defaults.map(m => m.name)));
+            localStorage.setItem('machinesList', JSON.stringify(defaultMachines));
             updateDbStatusBadge('local');
             return defaults;
         },
         async saveMachines(list) {
             if (!Array.isArray(list)) return;
-            const normalized = list.map(m => typeof m === 'string' ? { name: m, defaultRate: 0, defaultOperator: '' } : m);
+            const normalized = list.map(m => typeof m === 'object' ? m : { name: m, defaultRate: 0, defaultOperator: '' }).filter(m => m.name && m.name.trim());
             localStorage.setItem('machinesData', JSON.stringify(normalized));
             localStorage.setItem('machinesList', JSON.stringify(normalized.map(m => m.name)));
 
             if (supabaseClient) {
                 try {
-                    for (const m of normalized) {
-                        if (m.name && m.name.trim()) {
-                            const payload = {
-                                name: m.name.trim(),
-                                default_rate: m.defaultRate ? Number(m.defaultRate) : 0,
-                                default_operator: m.defaultOperator || ''
-                            };
-                            const { error } = await supabaseClient.from('machines').upsert(payload, { onConflict: 'name' });
-                            if (error && (error.message.includes('default_rate') || error.code === 'PGRST204')) {
-                                delete payload.default_rate;
-                                delete payload.default_operator;
-                                await supabaseClient.from('machines').upsert(payload, { onConflict: 'name' });
-                            }
+                    for (const mach of normalized) {
+                        if (mach.name && mach.name.trim()) {
+                            await supabaseClient.from('machines').upsert({
+                                name: mach.name.trim(),
+                                default_rate: mach.defaultRate || 0,
+                                default_operator: mach.defaultOperator || ''
+                            }, { onConflict: 'name' });
                         }
                     }
                 } catch (err) { console.error('saveMachines hatasi:', err); }
@@ -1111,26 +1318,25 @@
         async getOperators() {
             let localRaw = localStorage.getItem('operatorsList');
             let local = localRaw !== null ? JSON.parse(localRaw) : null;
+
             if (supabaseClient) {
                 try {
-                    const { data, error } = await supabaseClient.from('operators').select('name').order('id', { ascending: true });
-                    if (!error && data) {
-                        const dbList = data.map(d => d.name);
-                        if (dbList.length > 0) {
-                            localStorage.setItem('operatorsList', JSON.stringify(dbList));
-                            updateDbStatusBadge('online');
-                            return dbList;
-                        } else if (local !== null) {
-                            await this.saveOperators(local);
-                            updateDbStatusBadge('online');
-                            return local;
-                        }
+                    const { data, error } = await supabaseClient.from('operators').select('*').order('id', { ascending: true });
+                    if (!error && data && data.length > 0) {
+                        const dbList = data.map(d => typeof d === 'object' ? d.name : d);
+                        localStorage.setItem('operatorsList', JSON.stringify(dbList));
+                        updateDbStatusBadge('online');
+                        return dbList;
+                    } else if (!error && local !== null) {
+                        await this.saveOperators(local);
+                        updateDbStatusBadge('online');
+                        return local;
                     }
                 } catch (err) { console.error('getOperators hatasi:', err); }
             }
             if (local !== null) {
                 updateDbStatusBadge('local');
-                return local;
+                return local.map(o => typeof o === 'object' ? o.name : o);
             }
             localStorage.setItem('operatorsList', JSON.stringify(defaultOperators));
             updateDbStatusBadge('local');
@@ -1138,10 +1344,12 @@
         },
         async saveOperators(list) {
             if (!Array.isArray(list)) return;
-            localStorage.setItem('operatorsList', JSON.stringify(list));
+            const names = list.map(o => typeof o === 'object' ? o.name : o).filter(Boolean);
+            localStorage.setItem('operatorsList', JSON.stringify(names));
+
             if (supabaseClient) {
                 try {
-                    for (const name of list) {
+                    for (const name of names) {
                         if (name && name.trim()) {
                             await supabaseClient.from('operators').upsert({ name: name.trim() }, { onConflict: 'name' });
                         }
@@ -1164,12 +1372,6 @@
                             const dbNote = r.extra_note || r.extraNote || '';
                             const noteToUse = dbNote || localNote;
 
-                            if (!dbNote && localNote && supabaseClient) {
-                                supabaseClient.from('work_records').update({ extra_note: localNote }).eq('id', Number(r.id)).then(({ error }) => {
-                                    if (error) console.warn('Supabase not esitleme hatasi:', error);
-                                });
-                            }
-
                             return {
                                 id: Number(r.id),
                                 companyName: r.company_name,
@@ -1182,7 +1384,10 @@
                                 formattedEnd: r.formatted_end,
                                 durationHours: String(r.duration_hours),
                                 totalAmount: String(r.total_amount),
-                                extraNote: noteToUse
+                                extraNote: noteToUse,
+                                invoiceNo: r.invoice_no || r.invoiceNo || (localRec ? localRec.invoiceNo : '') || '',
+                                invoiceDate: r.invoice_date || r.invoiceDate || (localRec ? localRec.invoiceDate : '') || '',
+                                invoiceIssued: Boolean(r.invoice_issued || r.invoiceIssued || (localRec ? localRec.invoiceIssued : false) || (r.invoice_no || (localRec && localRec.invoiceNo)))
                             };
                         });
 
@@ -1216,15 +1421,19 @@
                         formatted_end: record.formattedEnd,
                         duration_hours: record.durationHours,
                         total_amount: record.totalAmount,
-                        extra_note: record.extraNote || record.extra_note || ''
+                        extra_note: record.extraNote || record.extra_note || '',
+                        invoice_no: record.invoiceNo || '',
+                        invoice_date: record.invoiceDate || '',
+                        invoice_issued: Boolean(record.invoiceIssued)
                     };
                     const { error } = await supabaseClient.from('work_records').insert([payload]);
                     if (error) {
                         console.error('Supabase addRecord hatasi:', error);
-                        if (error.message && (error.message.includes('extra_note') || error.code === 'PGRST204')) {
-                            delete payload.extra_note;
-                            await supabaseClient.from('work_records').insert([payload]);
-                        }
+                        const fallbackPayload = { ...payload };
+                        delete fallbackPayload.invoice_no;
+                        delete fallbackPayload.invoice_date;
+                        delete fallbackPayload.invoice_issued;
+                        await supabaseClient.from('work_records').insert([fallbackPayload]);
                     }
                 } catch (err) { console.error('addRecord istisnasi:', err); }
             }
@@ -1248,15 +1457,19 @@
                         formatted_end: record.formattedEnd,
                         duration_hours: record.durationHours,
                         total_amount: record.totalAmount,
-                        extra_note: record.extraNote || record.extra_note || ''
+                        extra_note: record.extraNote || record.extra_note || '',
+                        invoice_no: record.invoiceNo || '',
+                        invoice_date: record.invoiceDate || '',
+                        invoice_issued: Boolean(record.invoiceIssued)
                     };
                     const { error } = await supabaseClient.from('work_records').update(payload).eq('id', record.id);
                     if (error) {
                         console.error('Supabase updateRecord hatasi:', error);
-                        if (error.message && (error.message.includes('extra_note') || error.code === 'PGRST204')) {
-                            delete payload.extra_note;
-                            await supabaseClient.from('work_records').update(payload).eq('id', record.id);
-                        }
+                        const fallbackPayload = { ...payload };
+                        delete fallbackPayload.invoice_no;
+                        delete fallbackPayload.invoice_date;
+                        delete fallbackPayload.invoice_issued;
+                        await supabaseClient.from('work_records').update(fallbackPayload).eq('id', record.id);
                     }
                 } catch (err) { console.error('updateRecord istisnasi:', err); }
             }
@@ -1279,13 +1492,22 @@
                 try {
                     const { data, error } = await supabaseClient.from('payments').select('*').order('created_at', { ascending: true });
                     if (!error && data) {
-                        const dbPayments = data.map(p => ({
-                            id: Number(p.id),
-                            companyName: p.company_name,
-                            amount: String(p.amount),
-                            date: p.payment_date,
-                            note: p.note
-                        }));
+                        const localMap = new Map();
+                        localPayments.forEach(p => localMap.set(Number(p.id), p));
+
+                        const dbPayments = data.map(p => {
+                            const localP = localMap.get(Number(p.id));
+                            return {
+                                id: Number(p.id),
+                                companyName: p.company_name,
+                                amount: String(p.amount),
+                                date: p.payment_date,
+                                note: p.note,
+                                invoiceNo: p.invoice_no || p.invoiceNo || (localP ? localP.invoiceNo : '') || '',
+                                invoiceDate: p.invoice_date || p.invoiceDate || (localP ? localP.invoiceDate : '') || '',
+                                invoiceIssued: Boolean(p.invoice_issued || p.invoiceIssued || (localP ? localP.invoiceIssued : false) || (p.invoice_no || (localP && localP.invoiceNo)))
+                            };
+                        });
 
                         localStorage.setItem('companyPayments', JSON.stringify(dbPayments));
                         updateDbStatusBadge('online');
@@ -1305,15 +1527,55 @@
 
             if (supabaseClient) {
                 try {
-                    const { error } = await supabaseClient.from('payments').insert([{
+                    const payload = {
                         id: payment.id,
                         company_name: payment.companyName,
                         amount: payment.amount,
                         payment_date: payment.date,
-                        note: payment.note
-                    }]);
-                    if (error) console.error('Supabase addPayment hatasi:', error);
+                        note: payment.note,
+                        invoice_no: payment.invoiceNo || '',
+                        invoice_date: payment.invoiceDate || '',
+                        invoice_issued: Boolean(payment.invoiceIssued)
+                    };
+                    const { error } = await supabaseClient.from('payments').insert([payload]);
+                    if (error) {
+                        console.error('Supabase addPayment hatasi:', error);
+                        const fallbackPayload = { ...payload };
+                        delete fallbackPayload.invoice_no;
+                        delete fallbackPayload.invoice_date;
+                        delete fallbackPayload.invoice_issued;
+                        await supabaseClient.from('payments').insert([fallbackPayload]);
+                    }
                 } catch (err) { console.error('addPayment istisnasi:', err); }
+            }
+        },
+        async updatePayment(payment) {
+            let localPayments = JSON.parse(localStorage.getItem('companyPayments')) || [];
+            const idx = localPayments.findIndex(p => p.id === payment.id);
+            if (idx !== -1) localPayments[idx] = payment;
+            localStorage.setItem('companyPayments', JSON.stringify(localPayments));
+
+            if (supabaseClient) {
+                try {
+                    const payload = {
+                        company_name: payment.companyName,
+                        amount: payment.amount,
+                        payment_date: payment.date,
+                        note: payment.note,
+                        invoice_no: payment.invoiceNo || '',
+                        invoice_date: payment.invoiceDate || '',
+                        invoice_issued: Boolean(payment.invoiceIssued)
+                    };
+                    const { error } = await supabaseClient.from('payments').update(payload).eq('id', payment.id);
+                    if (error) {
+                        console.error('Supabase updatePayment hatasi:', error);
+                        const fallbackPayload = { ...payload };
+                        delete fallbackPayload.invoice_no;
+                        delete fallbackPayload.invoice_date;
+                        delete fallbackPayload.invoice_issued;
+                        await supabaseClient.from('payments').update(fallbackPayload).eq('id', payment.id);
+                    }
+                } catch (err) { console.error('updatePayment istisnasi:', err); }
             }
         },
         async deletePayment(id) {
@@ -1339,6 +1601,7 @@
     };
 
     let savedCompanies = [];
+    let companiesData = [];
     let savedMachines = [];
     let savedOperators = [];
     let records = [];
@@ -1445,17 +1708,19 @@
         const newRecords = await DataService.getRecords();
         const newPayments = await DataService.getPayments();
 
+        companiesData = newCompanies;
+        const mappedCompanies = newCompanies.map(c => typeof c === 'object' ? c.name : c);
         machinesData = newMachines;
         const mappedMachines = newMachines.map(m => typeof m === 'object' ? m.name : m);
 
-        const compStr = JSON.stringify(newCompanies);
+        const compStr = JSON.stringify(mappedCompanies);
         const machStr = JSON.stringify(mappedMachines);
         const opStr = JSON.stringify(newOperators);
         const recStr = JSON.stringify(newRecords);
         const payStr = JSON.stringify(newPayments);
 
         let dataChanged = false;
-        if (compStr !== lastCompaniesStr) { savedCompanies = newCompanies; lastCompaniesStr = compStr; dataChanged = true; }
+        if (compStr !== lastCompaniesStr) { savedCompanies = mappedCompanies; lastCompaniesStr = compStr; dataChanged = true; }
         if (machStr !== lastMachinesStr) { savedMachines = mappedMachines; lastMachinesStr = machStr; dataChanged = true; }
         if (opStr !== lastOperatorsStr) { savedOperators = newOperators; lastOperatorsStr = opStr; dataChanged = true; }
         if (recStr !== lastRecordsStr) { records = newRecords; lastRecordsStr = recStr; dataChanged = true; }
@@ -1569,6 +1834,15 @@
         if (mSelect) {
             mSelect.addEventListener('change', onMachineSelectChange);
         }
+
+        const payAmt = document.getElementById('paymentAmount');
+        if (payAmt) payAmt.addEventListener('input', onPaymentAmountInput);
+
+        const payDisc = document.getElementById('paymentDiscount');
+        if (payDisc) payDisc.addEventListener('input', onPaymentDiscountInput);
+
+        onPaymentTypeChange();
+        updatePaymentCompanyBalanceDisplay();
     });
 
     function switchTab(tabId) {
@@ -1578,6 +1852,10 @@
         const buttons = document.querySelectorAll('.tab-btn');
         buttons[0].classList.toggle('active', tabId === 'workTab');
         buttons[1].classList.toggle('active', tabId === 'paymentTab');
+
+        if (tabId === 'paymentTab') {
+            updatePaymentCompanyBalanceDisplay();
+        }
     }
 
     // --- MAKİNE SEÇİLDİĞİNDE VARSAYILAN SAAT ÜCRETİ VE OPERATÖRÜ OTOMATİK DOLDURMA ---
@@ -1624,17 +1902,109 @@
         updateSelectElement('machineName', savedMachines);
         updateSelectElement('operator', savedOperators);
         onMachineSelectChange();
+        updatePaymentCompanyBalanceDisplay();
     }
 
     // --- YENİ VERİ EKLEME (FİRMA, MAKİNE, OPERATÖR) ---
-    async function addCompany() {
-        const name = prompt("Sisteme eklenecek Firma / Müşteri ünvanını giriniz:");
-        if (name && name.trim() && !savedCompanies.includes(name.trim())) {
-            savedCompanies.push(name.trim());
-            await DataService.saveCompanies(savedCompanies);
+    function addCompany(fromManager = false) {
+        currentManageType = fromManager ? 'company' : null;
+        setModalSize('sm');
+        document.getElementById('modalTitle').innerText = '🏢 Yeni Firma & Müşteri Ekle';
+        document.getElementById('modalContent').innerHTML = `
+            <form id="addCompanyForm" style="display:flex; flex-direction:column; gap: 14px;">
+                <div class="form-group">
+                    <label style="font-weight:700; color:#1e3a8a; font-size:0.85rem;">Firma Kısa Adı / Cari Ünvanı *</label>
+                    <input type="text" id="newCompName" required placeholder="Örn: ABC İnşaat A.Ş.">
+                </div>
+                <div class="form-group">
+                    <label style="font-weight:700; color:#475569; font-size:0.85rem;">Resmi Fatura Başlığı & Vergi / Adres Bilgisi (İsteğe Bağlı)</label>
+                    <textarea id="newCompInvoice" rows="3" placeholder="Örn: ABC İNŞAAT HAFRİYAT MADENCİLİK SAN. TİC. LTD. ŞTİ.&#10;VKN: 1234567890 - Kadıköy V.D. - İstanbul" style="width:100%; border:1px solid var(--border-color); border-radius:4px; padding:8px 12px; font-size:0.88rem; box-sizing:border-box;"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:5px;">
+                    <button type="button" class="btn-outline" onclick="closeModal()">İptal</button>
+                    <button type="submit" class="btn-primary">Firmayı Kaydet</button>
+                </div>
+            </form>
+        `;
+        document.getElementById('managerModal').style.display = 'flex';
+        setTimeout(() => { const el = document.getElementById('newCompName'); if (el) el.focus(); }, 50);
+
+        document.getElementById('addCompanyForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('newCompName').value.trim();
+            const invoiceTitle = document.getElementById('newCompInvoice').value.trim();
+            if (!name) return;
+
+            const existing = companiesData.map(c => typeof c === 'object' ? c.name : c);
+            if (existing.includes(name)) return alert("Bu isimde bir firma zaten mevcut!");
+
+            companiesData.push({ name, invoiceTitle });
+            savedCompanies = companiesData.map(c => typeof c === 'object' ? c.name : c);
+            await DataService.saveCompanies(companiesData);
             renderSelects();
-            document.getElementById('companyName').value = name.trim();
-        }
+            document.getElementById('companyName').value = name;
+            if (document.getElementById('paymentCompany')) {
+                document.getElementById('paymentCompany').value = name;
+                updatePaymentCompanyBalanceDisplay();
+            }
+            const reopen = currentManageType === 'company';
+            closeModal();
+            if (reopen) openManager('company');
+            showToast(`"${name}" firması başarıyla kaydedildi!`);
+        };
+    }
+
+    function editCompany(oldName) {
+        const compObj = companiesData.find(c => (typeof c === 'object' ? c.name : c) === oldName) || { name: oldName, invoiceTitle: '' };
+        setModalSize('sm');
+        document.getElementById('modalTitle').innerText = `🏢 "${oldName}" Firma & Fatura Bilgilerini Düzenle`;
+        document.getElementById('modalContent').innerHTML = `
+            <form id="editCompanyForm" style="display:flex; flex-direction:column; gap: 14px;">
+                <div class="form-group">
+                    <label style="font-weight:700; color:#1e3a8a; font-size:0.85rem;">Firma Kısa Adı / Cari Ünvanı *</label>
+                    <input type="text" id="editCompName" value="${compObj.name}" required>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight:700; color:#475569; font-size:0.85rem;">Resmi Fatura Başlığı & Vergi / Adres Bilgisi</label>
+                    <textarea id="editCompInvoice" rows="3" placeholder="Örn: ABC İNŞAAT HAFRİYAT SAN. TİC. LTD. ŞTİ.&#10;VKN: 1234567890 - Kadıköy V.D." style="width:100%; border:1px solid var(--border-color); border-radius:4px; padding:8px 12px; font-size:0.88rem; box-sizing:border-box;">${compObj.invoiceTitle || ''}</textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:5px;">
+                    <button type="button" class="btn-outline" onclick="closeModal()">İptal</button>
+                    <button type="submit" class="btn-primary">Güncelle ve Kaydet</button>
+                </div>
+            </form>
+        `;
+        document.getElementById('managerModal').style.display = 'flex';
+        setTimeout(() => { const el = document.getElementById('editCompName'); if (el) el.focus(); }, 50);
+
+        document.getElementById('editCompanyForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const newName = document.getElementById('editCompName').value.trim();
+            const newInvoiceTitle = document.getElementById('editCompInvoice').value.trim();
+            if (!newName) return;
+
+            if (newName !== oldName) {
+                const existing = companiesData.map(c => typeof c === 'object' ? c.name : c);
+                if (existing.includes(newName)) return alert("Bu isimde başka bir firma zaten mevcut!");
+                await DataService.renameCompany(oldName, newName);
+            }
+
+            const idx = companiesData.findIndex(c => (typeof c === 'object' ? c.name : c) === newName || (typeof c === 'object' ? c.name : c) === oldName);
+            if (idx !== -1) {
+                companiesData[idx] = { name: newName, invoiceTitle: newInvoiceTitle };
+            } else {
+                companiesData.push({ name: newName, invoiceTitle: newInvoiceTitle });
+            }
+
+            savedCompanies = companiesData.map(c => typeof c === 'object' ? c.name : c);
+            await DataService.saveCompanies(companiesData);
+            renderSelects();
+            renderTable();
+            const reopen = currentManageType === 'company';
+            closeModal();
+            if (reopen) openManager('company');
+            showToast(`"${newName}" firma ve fatura bilgileri güncellendi!`);
+        };
     }
 
     async function addMachine() {
@@ -1685,7 +2055,7 @@
         }
     }
 
-    // --- CANLI HESAPLAMA ---
+    // --- CANLI HESAPLAMA (MESAİ FORMU) ---
     function calculateLive() {
         const start = new Date(document.getElementById('startTime').value);
         const end = new Date(document.getElementById('endTime').value);
@@ -1693,8 +2063,10 @@
         
         if (!isNaN(start) && !isNaN(end) && end > start) {
             const hours = (end - start) / (1000 * 60 * 60);
+            const total = hours * rate;
+
             document.getElementById('liveHours').innerText = hours.toFixed(2);
-            document.getElementById('liveTotal').innerText = (hours * rate).toLocaleString('tr-TR', {minimumFractionDigits:2});
+            document.getElementById('liveTotal').innerText = total.toLocaleString('tr-TR', {minimumFractionDigits:2});
         } else {
             document.getElementById('liveHours').innerText = "0.00";
             document.getElementById('liveTotal').innerText = "0.00";
@@ -1797,7 +2169,7 @@
         }, 3000);
     }
 
-    // --- FORM GÖNDERME İŞLEMLERİ ---
+    // --- FORM GÖNDERME İŞLEMLERİ (MESAİ) ---
     document.getElementById('trackingForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const start = new Date(document.getElementById('startTime').value);
@@ -1806,7 +2178,8 @@
         if (end <= start) return alert('Sistem Uyarısı: Bitiş zamanı, başlangıç zamanından önce veya aynı olamaz.');
 
         const hours = (end - start) / (1000 * 60 * 60);
-        const rate = parseFloat(document.getElementById('hourlyRate').value);
+        const rate = parseFloat(document.getElementById('hourlyRate').value) || 0;
+        const total = hours * rate;
         const formatOptions = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
 
         const noteInputVal = document.getElementById('extraNote').value.trim();
@@ -1824,7 +2197,7 @@
             formattedStart: start.toLocaleString('tr-TR', formatOptions),
             formattedEnd: end.toLocaleString('tr-TR', formatOptions),
             durationHours: hours.toFixed(2),
-            totalAmount: (hours * rate).toFixed(2),
+            totalAmount: total.toFixed(2),
             extraNote: noteText
         };
 
@@ -1838,32 +2211,321 @@
         showToast("Mesai Kaydı Başarıyla İşlendi!");
     });
 
+    // --- FİRMA GÜNCEL BORÇ HESAPLAMA VE OTOMATİK DOLDURMA YARDIMCILARI ---
+    function getCompanyCurrentBalance(compName) {
+        if (!compName) return 0;
+        let totalHakEdis = 0;
+        let totalPaid = 0;
+        records.forEach(r => {
+            if (r.companyName === compName) {
+                totalHakEdis += parseFloat(r.totalAmount || 0);
+            }
+        });
+        payments.forEach(p => {
+            if (p.companyName === compName) {
+                totalPaid += parseFloat(p.amount || 0);
+            }
+        });
+        return totalHakEdis - totalPaid;
+    }
+
+    function updatePaymentCompanyBalanceDisplay() {
+        const sel = document.getElementById('paymentCompany');
+        const disp = document.getElementById('companyCurrentBalanceDisplay');
+        const btn = document.getElementById('btnFetchCurrentDebt');
+        if (!sel || !disp) return;
+
+        const compName = sel.value;
+        if (!compName) {
+            disp.innerText = "Lütfen firma seçiniz";
+            disp.style.color = "var(--text-muted)";
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⚡ Güncel Borcu Çek</span>`;
+            }
+            return;
+        }
+
+        const balance = getCompanyCurrentBalance(compName);
+        if (btn) btn.disabled = false;
+
+        if (balance > 0) {
+            disp.innerHTML = `<span style="color:#991b1b;">⚠️ Borç Bakiye: <strong>${balance.toLocaleString('tr-TR', {minimumFractionDigits:2})} TL</strong></span>`;
+            if (btn) btn.innerHTML = `<span>⚡ Güncel Borcu Çek (${balance.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺)</span>`;
+        } else if (balance < 0) {
+            disp.innerHTML = `<span style="color:#166534;">✅ Alacaklı (Fazla Ödeme): <strong>${Math.abs(balance).toLocaleString('tr-TR', {minimumFractionDigits:2})} TL</strong></span>`;
+            if (btn) btn.innerHTML = `<span>⚡ Bakiyeyi Aktar (${Math.abs(balance).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺)</span>`;
+        } else {
+            disp.innerHTML = `<span style="color:#475569;">🟢 Hesap Mutabık (Bakiye: 0.00 TL)</span>`;
+            if (btn) btn.innerHTML = `<span>⚡ Güncel Borcu Çek (0.00 ₺)</span>`;
+        }
+    }
+
+    function fetchAndFillCurrentDebt() {
+        const sel = document.getElementById('paymentCompany');
+        if (!sel || !sel.value) return alert("Lütfen önce bir firma seçiniz!");
+
+        const compName = sel.value;
+        const balance = getCompanyCurrentBalance(compName);
+        const payType = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
+        const targetAmount = Math.max(0, balance);
+
+        if (payType === 'nakit') {
+            const amtInput = document.getElementById('paymentAmount');
+            if (amtInput) {
+                amtInput.value = targetAmount > 0 ? targetAmount.toFixed(2) : '0.00';
+                amtInput.focus();
+            }
+        } else if (payType === 'iskontolu') {
+            const amtInput = document.getElementById('paymentAmount');
+            const discInput = document.getElementById('paymentDiscount');
+            if (amtInput) {
+                amtInput.value = targetAmount > 0 ? targetAmount.toFixed(2) : '0.00';
+                amtInput.focus();
+            }
+            if (discInput) {
+                discInput.value = '0.00';
+            }
+        } else if (payType === 'mahsup') {
+            const discInput = document.getElementById('paymentDiscount');
+            if (discInput) {
+                discInput.value = targetAmount > 0 ? targetAmount.toFixed(2) : '0.00';
+                discInput.focus();
+            }
+        }
+
+        updatePaymentCalculationSummary();
+        showToast(`"${compName}" firmasının güncel borcu (${targetAmount.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺) alana aktarıldı!`);
+    }
+
+    function onPaymentAmountInput() {
+        const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
+        const sel = document.getElementById('paymentCompany');
+        const amtInput = document.getElementById('paymentAmount');
+        const discInput = document.getElementById('paymentDiscount');
+
+        if (type === 'iskontolu' && sel && sel.value && amtInput && discInput) {
+            const balance = getCompanyCurrentBalance(sel.value);
+            if (balance > 0) {
+                const cashStr = amtInput.value.trim();
+                if (cashStr !== '') {
+                    const cash = parseFloat(cashStr) || 0;
+                    if (cash <= balance) {
+                        discInput.value = (balance - cash).toFixed(2);
+                    } else {
+                        discInput.value = '0.00';
+                    }
+                } else {
+                    discInput.value = balance.toFixed(2);
+                }
+            }
+        }
+        updatePaymentCalculationSummary();
+    }
+
+    function onPaymentDiscountInput() {
+        const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
+        const sel = document.getElementById('paymentCompany');
+        const amtInput = document.getElementById('paymentAmount');
+        const discInput = document.getElementById('paymentDiscount');
+
+        if (type === 'iskontolu' && sel && sel.value && amtInput && discInput) {
+            const balance = getCompanyCurrentBalance(sel.value);
+            if (balance > 0) {
+                const discStr = discInput.value.trim();
+                if (discStr !== '') {
+                    const disc = parseFloat(discStr) || 0;
+                    if (disc <= balance) {
+                        amtInput.value = (balance - disc).toFixed(2);
+                    } else {
+                        amtInput.value = '0.00';
+                    }
+                } else {
+                    amtInput.value = balance.toFixed(2);
+                }
+            }
+        }
+        updatePaymentCalculationSummary();
+    }
+
+    // --- TAHSİLAT EKRANI İŞLEM TÜRÜ DEĞİŞİKLİĞİ & CANLI HESAPLAMA ---
+    function onPaymentTypeChange() {
+        const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
+        const amtGrp = document.getElementById('paymentAmountGroup');
+        const discGrp = document.getElementById('paymentDiscountGroup');
+        const noteGrp = document.getElementById('paymentNoteGroup');
+        const amtLbl = document.getElementById('paymentAmountLabel');
+        const discLbl = document.getElementById('paymentDiscountLabel');
+        const amtInput = document.getElementById('paymentAmount');
+        const discInput = document.getElementById('paymentDiscount');
+        const noteInput = document.getElementById('paymentNote');
+        const btn = document.getElementById('paymentSubmitBtn');
+        const sel = document.getElementById('paymentCompany');
+        const balance = (sel && sel.value) ? getCompanyCurrentBalance(sel.value) : 0;
+
+        if (type === 'nakit') {
+            if (amtGrp) { amtGrp.style.display = 'flex'; amtGrp.style.gridColumn = 'auto'; }
+            if (discGrp) { discGrp.style.display = 'none'; }
+            if (noteGrp) { noteGrp.style.gridColumn = 'span 2'; }
+            if (amtLbl) amtLbl.innerText = 'Tahsil Edilen Tutar (TL)';
+            if (amtInput) amtInput.required = true;
+            if (discInput) { discInput.required = false; discInput.value = ''; }
+            if (noteInput && !noteInput.value) noteInput.placeholder = 'Örn: Dekont No: 1234';
+            if (btn) {
+                btn.className = 'btn-success';
+                btn.innerText = 'Tahsilatı Onayla ve Kaydet';
+            }
+        } else if (type === 'iskontolu') {
+            if (amtGrp) { amtGrp.style.display = 'flex'; amtGrp.style.gridColumn = 'auto'; }
+            if (discGrp) { discGrp.style.display = 'flex'; discGrp.style.gridColumn = 'auto'; }
+            if (noteGrp) { noteGrp.style.gridColumn = 'auto'; }
+            if (amtLbl) amtLbl.innerText = 'Tahsil Edilen (İndirimli) Tutar (TL)';
+            if (discLbl) discLbl.innerText = 'Uygulanan İskonto (TL)';
+            if (amtInput) amtInput.required = true;
+            if (discInput) discInput.required = true;
+            if (noteInput && !noteInput.value) noteInput.placeholder = 'Örn: Anlaşma İskontosu / Fiyat Farkı';
+            if (btn) {
+                btn.className = 'btn-primary';
+                btn.innerText = 'İskontolu Tahsilatı Kaydet (Cariden Mahsup Et)';
+            }
+            if (balance > 0 && (!amtInput.value || parseFloat(amtInput.value) === 0)) {
+                amtInput.value = balance.toFixed(2);
+                discInput.value = '0.00';
+            }
+        } else if (type === 'mahsup') {
+            if (amtGrp) { amtGrp.style.display = 'none'; }
+            if (discGrp) { discGrp.style.display = 'flex'; discGrp.style.gridColumn = 'auto'; }
+            if (noteGrp) { noteGrp.style.gridColumn = 'span 2'; }
+            if (discLbl) discLbl.innerText = 'Mahsup Edilecek İskonto Tutarı (TL)';
+            if (amtInput) { amtInput.required = false; amtInput.value = ''; }
+            if (discInput) discInput.required = true;
+            if (noteInput && !noteInput.value) noteInput.placeholder = 'Örn: Yıl Sonu İskonto / Fiyat Farkı İndirimi';
+            if (btn) {
+                btn.className = 'btn-primary';
+                btn.innerText = 'İskonto Mahsubunu Kaydet';
+            }
+        }
+        updatePaymentCalculationSummary();
+    }
+
+    function updatePaymentCalculationSummary() {
+        const type = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
+        const cash = parseFloat(document.getElementById('paymentAmount').value) || 0;
+        const disc = parseFloat(document.getElementById('paymentDiscount').value) || 0;
+        const disp = document.getElementById('paymentTotalCreditDisplay');
+        const box = document.getElementById('paymentCalcSummary');
+        if (!disp || !box) return;
+
+        let totalCredit = 0;
+        if (type === 'nakit') {
+            totalCredit = cash;
+            box.style.background = '#f0fdf4';
+            box.style.borderColor = '#bbf7d0';
+            box.style.color = '#166534';
+            box.firstElementChild.innerText = 'Cariden Düşülecek Tahsilat Tutarı:';
+        } else if (type === 'iskontolu') {
+            totalCredit = cash + disc;
+            const discPercent = totalCredit > 0 ? ((disc / totalCredit) * 100).toFixed(1) : '0.0';
+            box.style.background = '#fffbeb';
+            box.style.borderColor = '#fde68a';
+            box.style.color = '#92400e';
+            box.firstElementChild.innerHTML = `Cariden Düşülecek Toplam (Nakit: ${cash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ + İskonto: ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ <span style="background:#fef3c7; border:1px solid #f59e0b; padding:2px 6px; border-radius:4px; font-size:0.8rem; margin-left:6px;">🏷️ %${discPercent} İskonto</span>):`;
+        } else if (type === 'mahsup') {
+            totalCredit = disc;
+            box.style.background = '#fef2f2';
+            box.style.borderColor = '#fecaca';
+            box.style.color = '#991b1b';
+            box.firstElementChild.innerText = 'Cariden Mahsup Edilecek İskonto / İndirim:';
+        }
+        disp.innerText = totalCredit.toLocaleString('tr-TR', {minimumFractionDigits:2}) + ' TL';
+    }
+
+    function togglePaymentInvoiceFields() {
+        const chk = document.getElementById('paymentInvoiceIssued');
+        const fields = document.getElementById('paymentInvoiceFields');
+        if (!chk || !fields) return;
+        fields.style.display = chk.checked ? 'grid' : 'none';
+        if (chk.checked) {
+            const dateInput = document.getElementById('paymentInvoiceDate');
+            if (dateInput && !dateInput.value) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                dateInput.value = `${year}-${month}-${day}`;
+            }
+            const noInput = document.getElementById('paymentInvoiceNo');
+            if (noInput) noInput.focus();
+        }
+    }
+
+    // --- FORM GÖNDERME İŞLEMLERİ (TAHSİLAT) ---
     document.getElementById('paymentForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        const payType = document.getElementById('paymentType') ? document.getElementById('paymentType').value : 'nakit';
+        const cash = parseFloat(document.getElementById('paymentAmount').value) || 0;
+        const disc = parseFloat(document.getElementById('paymentDiscount').value) || 0;
+        const userNote = document.getElementById('paymentNote').value.trim();
+        
+        let finalAmount = 0;
+        let finalNote = userNote;
+
+        if (payType === 'nakit') {
+            if (cash <= 0) return alert("Lütfen geçerli bir tahsilat tutarı giriniz!");
+            finalAmount = cash;
+            finalNote = userNote || 'Tahsilat Belgesi';
+        } else if (payType === 'iskontolu') {
+            if (cash <= 0 && disc <= 0) return alert("Lütfen tahsilat ve/veya iskonto tutarı giriniz!");
+            finalAmount = cash + disc;
+            const details = `(Nakit: ${cash.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺ + İskonto: ${disc.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺)`;
+            finalNote = userNote ? `${userNote} ${details}` : `🏷️ İskontolu Tahsilat ${details}`;
+        } else if (payType === 'mahsup') {
+            if (disc <= 0) return alert("Lütfen mahsup edilecek iskonto tutarını giriniz!");
+            finalAmount = disc;
+            finalNote = userNote ? (userNote.includes('İSKONTO') || userNote.includes('İNDİRİM') ? userNote : `🏷️ İSKONTO / İNDİRİM: ${userNote}`) : '🏷️ Cari İskonto / Anlaşma İndirimi';
+        }
+
+        const isInvoiceIssued = document.getElementById('paymentInvoiceIssued') ? document.getElementById('paymentInvoiceIssued').checked : false;
+        const invNo = isInvoiceIssued ? (document.getElementById('paymentInvoiceNo')?.value.trim() || '') : '';
+        const invDate = isInvoiceIssued ? (document.getElementById('paymentInvoiceDate')?.value || '') : '';
+
         const newPay = {
             id: Date.now(),
             companyName: document.getElementById('paymentCompany').value,
-            amount: parseFloat(document.getElementById('paymentAmount').value).toFixed(2),
+            amount: finalAmount.toFixed(2),
             date: new Date(document.getElementById('paymentDate').value).toLocaleDateString('tr-TR'),
-            note: document.getElementById('paymentNote').value.trim() || 'Tahsilat Belgesi'
+            note: finalNote,
+            invoiceNo: invNo,
+            invoiceDate: invDate,
+            invoiceIssued: isInvoiceIssued
         };
 
         payments.push(newPay);
         await DataService.addPayment(newPay);
         renderTable();
         document.getElementById('paymentAmount').value = '';
+        document.getElementById('paymentDiscount').value = '';
         document.getElementById('paymentNote').value = '';
-        showToast("Tahsilat Kaydı Başarıyla İşlendi!");
+        if (document.getElementById('paymentInvoiceIssued')) {
+            document.getElementById('paymentInvoiceIssued').checked = false;
+            togglePaymentInvoiceFields();
+            if (document.getElementById('paymentInvoiceNo')) document.getElementById('paymentInvoiceNo').value = '';
+            if (document.getElementById('paymentInvoiceDate')) document.getElementById('paymentInvoiceDate').value = '';
+        }
+        updatePaymentCalculationSummary();
+        updatePaymentCompanyBalanceDisplay();
+        showToast(payType === 'nakit' ? "Tahsilat Kaydı Başarıyla İşlendi!" : (payType === 'iskontolu' ? "İskontolu Tahsilat Başarıyla İşlendi!" : "İskonto Mahsubu Cariden Düşüldü!"));
     });
 
     // --- TABLO VE ÖZET RENDER İŞLEMİ ---
     function renderTable() {
+        updatePaymentCompanyBalanceDisplay();
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         let [gHours, gCost, gPaid] = [0, 0, 0];
         const compData = {};
 
-        // Kayıtları Mesai Başlangıç Tarihine Göre Sıralama (En Yeni Başlangıç Tarihi En Üstte)
+        // Kayıtları Mesai Başlangıç Tarihine Göre Sıralama
         records.sort((a, b) => {
             const timeA = a.startTimeIso ? new Date(a.startTimeIso).getTime() : (parseTrDate(a.formattedStart) ? parseTrDate(a.formattedStart).getTime() : 0);
             const timeB = b.startTimeIso ? new Date(b.startTimeIso).getTime() : (parseTrDate(b.formattedStart) ? parseTrDate(b.formattedStart).getTime() : 0);
@@ -1883,7 +2545,7 @@
             compData[p.companyName].paid += parseFloat(p.amount || 0);
         });
 
-        // Sayfalama (Pagination) Dilimleme Hesaplaması
+        // Sayfalama Dilimleme Hesaplaması
         const totalRecords = records.length;
         const totalPages = recordsPerPage >= totalRecords ? 1 : (Math.ceil(totalRecords / recordsPerPage) || 1);
         if (currentPage > totalPages) currentPage = totalPages;
@@ -1899,15 +2561,16 @@
             paginatedRecords.forEach((r) => {
                 const noteVal = r.extraNote || r.extra_note || '';
                 const noteBadge = noteVal ? `<br><span style="font-size:0.78rem; color:#1e3a8a; background:#e0e7ff; padding:2px 6px; border-radius:3px; display:inline-block; margin-top:3px;">📝 ${noteVal}</span>` : '';
+
                 tbody.innerHTML += `<tr>
                     <td><strong>${r.companyName}</strong></td>
                     <td>${r.machineName}${noteBadge}</td>
                     <td>${r.operator}</td>
-                    <td>${r.hourlyRate} ₺</td>
+                    <td>${parseFloat(r.hourlyRate).toFixed(2)} ₺</td>
                     <td>${r.formattedStart}</td>
                     <td>${r.formattedEnd}</td>
                     <td>${r.durationHours} Saat</td>
-                    <td><strong>${r.totalAmount} ₺</strong></td>
+                    <td><strong>${parseFloat(r.totalAmount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong></td>
                     <td>
                         <div class="action-btns">
                             <button class="btn-primary" onclick="editRecord(${r.id})">Düzenle</button>
@@ -1938,7 +2601,7 @@
                 <div class="company-card">
                     <h4>${comp}</h4>
                     <div class="val-row"><span>Toplam Hak Ediş:</span> <span>${data.cost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span></div>
-                    <div class="val-row"><span>Toplam Tahsilat:</span> <span class="val-credit">${data.paid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span></div>
+                    <div class="val-row"><span>Toplam Tahsilat / İskonto:</span> <span class="val-credit">${data.paid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</span></div>
                     <div class="val-row" style="font-weight:bold; color:${statusColor}">
                         <span>Güncel Durum:</span> <span>${statusText}</span>
                     </div>
@@ -1952,9 +2615,10 @@
 
     // --- DÜZENLEME MODALI ---
     function editRecord(id) {
-        const rec = records.find(r => r.id === id);
+        const rec = records.find(r => Number(r.id) === Number(id));
         if (!rec) return;
 
+        setModalSize('md');
         document.getElementById('modalTitle').innerText = 'Kayıt Düzenleme Paneli';
         
         const cOpts = savedCompanies.map(c => `<option value="${c}" ${c===rec.companyName?'selected':''}>${c}</option>`).join('');
@@ -1962,15 +2626,18 @@
         const oOpts = savedOperators.map(o => `<option value="${o}" ${o===rec.operator?'selected':''}>${o}</option>`).join('');
 
         document.getElementById('modalContent').innerHTML = `
-            <form id="editForm" class="form-grid" style="grid-template-columns: 1fr;">
-                <div class="form-group"><label>Firma Ünvanı</label><select id="eComp">${cOpts}</select></div>
-                <div class="form-group"><label>Makine</label><select id="eMach">${mOpts}</select></div>
-                <div class="form-group"><label>Operatör</label><select id="eOp">${oOpts}</select></div>
-                <div class="form-group"><label>Birim Saat Ücreti</label><input type="number" step="0.01" id="eRate" value="${rec.hourlyRate}" required></div>
+            <form id="editForm" class="form-grid" style="grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 0;">
+                <div class="form-group"><label>Firma / Müşteri Ünvanı</label><select id="eComp">${cOpts}</select></div>
+                <div class="form-group"><label>İş Makinesi / Plaka</label><select id="eMach">${mOpts}</select></div>
+                <div class="form-group"><label>Operatör Adı Soyadı</label><select id="eOp">${oOpts}</select></div>
+                <div class="form-group"><label>Birim Saat Ücreti (TL)</label><input type="number" step="0.01" id="eRate" value="${rec.hourlyRate}" required></div>
                 <div class="form-group"><label>Mesai Başlangıç</label><input type="datetime-local" id="eStart" value="${rec.startTimeIso}" required></div>
                 <div class="form-group"><label>Mesai Bitiş</label><input type="datetime-local" id="eEnd" value="${rec.endTimeIso}" required></div>
-                <div class="form-group"><label>Ekstra Bilgilendirme / İş Notu</label><input type="text" id="eNote" value="${rec.extraNote || ''}" placeholder="Örn: 50 Palet taşındı"></div>
-                <button type="submit" class="btn-primary" style="margin-top:10px;">Değişiklikleri Onayla</button>
+                <div class="form-group" style="grid-column: 1 / -1;"><label>Ekstra Bilgilendirme / İş Notu</label><input type="text" id="eNote" value="${rec.extraNote || ''}" placeholder="Örn: 50 Palet taşındı"></div>
+                <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:8px; margin-top:5px;">
+                    <button type="button" class="btn-outline" onclick="closeModal()">İptal</button>
+                    <button type="submit" class="btn-primary">Değişiklikleri Onayla ve Kaydet</button>
+                </div>
             </form>
         `;
         document.getElementById('managerModal').style.display = 'flex';
@@ -1982,16 +2649,19 @@
             if (end <= start) return alert("Hatalı tarih aralığı!");
             
             const hours = (end - start) / (1000*60*60);
+            const rate = parseFloat(document.getElementById('eRate').value) || 0;
+            const total = hours * rate;
+
             rec.companyName = document.getElementById('eComp').value;
             rec.machineName = document.getElementById('eMach').value;
             rec.operator = document.getElementById('eOp').value;
-            rec.hourlyRate = parseFloat(document.getElementById('eRate').value);
+            rec.hourlyRate = rate;
             rec.startTimeIso = document.getElementById('eStart').value;
             rec.endTimeIso = document.getElementById('eEnd').value;
             rec.formattedStart = start.toLocaleString('tr-TR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
             rec.formattedEnd = end.toLocaleString('tr-TR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
             rec.durationHours = hours.toFixed(2);
-            rec.totalAmount = (hours * rec.hourlyRate).toFixed(2);
+            rec.totalAmount = total.toFixed(2);
             rec.extraNote = document.getElementById('eNote').value.trim();
 
             await DataService.updateRecord(rec);
@@ -2001,39 +2671,68 @@
 
     // --- CARİ DÖKÜM İNCELEME ---
     function showCompanyHistory(comp) {
+        setModalSize('lg');
         document.getElementById('modalTitle').innerText = `${comp} - Cari Hesap Dökümü`;
         const safeCompEscaped = comp.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
         let html = `
         <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 14px; border-radius: 4px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
-            <span style="font-size: 0.88rem; font-weight: 600; color: var(--primary);">📄 Detaylı Kurumsal Ekstre</span>
-            <button class="btn-success" style="padding: 6px 14px; font-size: 0.85rem;" onclick="generateCompanyPDF('${safeCompEscaped}')">📄 Detaylı PDF Ekstresi İndir</button>
+            <span style="font-size: 0.88rem; font-weight: 600; color: var(--primary);">📄 Detaylı Kurumsal Ekstre & Fatura</span>
+            <div style="display:flex; gap:6px;">
+                <button class="btn-primary" style="padding: 6px 12px; font-size: 0.82rem;" onclick="openInvoiceManager('${safeCompEscaped}')">🧾 Fatura Yönetimi</button>
+                <button class="btn-success" style="padding: 6px 12px; font-size: 0.82rem;" onclick="generateCompanyPDF('${safeCompEscaped}')">📄 PDF Ekstresi İndir</button>
+            </div>
         </div>
-        <div class="table-responsive"><table><thead><tr><th>İşlem Tarihi</th><th>Açıklama/Belge</th><th>Tutar</th><th>İşlem Tipi</th><th>Sil</th></tr></thead><tbody>`;
+        <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                <thead style="position:sticky; top:0; background:#f1f5f9; z-index:2;">
+                    <tr>
+                        <th style="width:125px; white-space:nowrap; padding:8px 10px;">İşlem Tarihi</th>
+                        <th style="padding:8px 10px;">Açıklama / Belge</th>
+                        <th style="width:120px; text-align:right; white-space:nowrap; padding:8px 10px;">Tutar</th>
+                        <th style="width:130px; white-space:nowrap; padding:8px 10px;">İşlem Tipi</th>
+                        <th style="width:140px; text-align:center; white-space:nowrap; padding:8px 10px;">Fatura Durumu</th>
+                        <th style="width:60px; text-align:center; white-space:nowrap; padding:8px 10px;">Sil</th>
+                    </tr>
+                </thead>
+                <tbody>`;
         
         let hasData = false;
         records.filter(r => r.companyName === comp).forEach(r => {
             hasData = true;
             const noteText = r.extraNote ? `<br><small style="color:#1e3a8a;">📝 ${r.extraNote}</small>` : '';
-            html += `<tr><td>${r.formattedStart}</td><td>${r.machineName} (${r.durationHours} Saat)${noteText}</td>
-            <td style="color:var(--danger); font-weight:bold;">+${r.totalAmount} ₺</td>
-            <td>Hak Ediş İşlemi</td>
-            <td><button class="btn-danger" style="padding:4px 8px;" onclick="deleteRecord(${r.id})">Sil</button></td></tr>`;
+            const invBadge = (r.invoiceIssued || r.invoiceNo) ? `<span class="badge-invoice-done">🟢 ${r.invoiceNo || 'Kesildi'}</span>` : `<span class="badge-invoice-pending">⏳ Bekliyor</span>`;
+
+            html += `<tr>
+                <td style="white-space:nowrap; padding:7px 10px;">${r.formattedStart}</td>
+                <td style="word-break:break-word; padding:7px 10px;">${r.machineName} (${r.durationHours} Saat)${noteText}</td>
+                <td style="color:var(--danger); font-weight:bold; text-align:right; white-space:nowrap; padding:7px 10px;">+${parseFloat(r.totalAmount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td style="white-space:nowrap; padding:7px 10px;">Hak Ediş İşlemi</td>
+                <td style="text-align:center; white-space:nowrap; padding:7px 10px;">${invBadge}</td>
+                <td style="text-align:center; padding:7px 10px;"><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteRecord(${r.id})">Sil</button></td>
+            </tr>`;
         });
         payments.filter(p => p.companyName === comp).forEach(p => {
             hasData = true;
-            html += `<tr><td>${p.date}</td><td>${p.note}</td>
-            <td style="color:var(--success); font-weight:bold;">-${p.amount} ₺</td>
-            <td>Tahsilat İşlemi</td>
-            <td><button class="btn-danger" style="padding:4px 8px;" onclick="deletePayment(${p.id})">Sil</button></td></tr>`;
+            const isDisc = p.note && (p.note.includes('İSKONTO') || p.note.includes('İNDİRİM'));
+            const invBadge = (p.invoiceIssued || p.invoiceNo) ? `<span class="badge-invoice-done">🟢 ${p.invoiceNo || 'Kesildi'}</span>` : `<span class="badge-invoice-pending">⏳ Bekliyor</span>`;
+
+            html += `<tr>
+                <td style="white-space:nowrap; padding:7px 10px;">${p.date}</td>
+                <td style="word-break:break-word; padding:7px 10px;">${p.note}</td>
+                <td style="color:var(--success); font-weight:bold; text-align:right; white-space:nowrap; padding:7px 10px;">-${parseFloat(p.amount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                <td style="white-space:nowrap; padding:7px 10px;">${isDisc ? '🏷️ İskonto Mahsubu' : '💳 Tahsilat'}</td>
+                <td style="text-align:center; white-space:nowrap; padding:7px 10px;">${invBadge}</td>
+                <td style="text-align:center; padding:7px 10px;"><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deletePayment(${p.id})">Sil</button></td>
+            </tr>`;
         });
         
-        if(!hasData) html += '<tr><td colspan="5" style="text-align:center;">Cari hareket bulunamadı.</td></tr>';
+        if(!hasData) html += '<tr><td colspan="6" style="text-align:center; padding:15px; color:#64748b;">Cari hareket bulunamadı.</td></tr>';
         
         document.getElementById('modalContent').innerHTML = html + '</tbody></table></div>';
         document.getElementById('managerModal').style.display = 'flex';
     }
 
-    // --- GÜVENLİ YAZDIRMA YARDIMCI FONKSİYONU (YATAY / LANDSCAPE IFRAME DESTEKLİ) ---
+    // --- GÜVENLİ YAZDIRMA YARDIMCI FONKSİYONU ---
     function safePrint(pdfContent, titleStr) {
         let iframe = document.getElementById('pdfPrintIframe');
         if (!iframe) {
@@ -2073,7 +2772,8 @@
         let totalHakEdis = 0;
         let totalHours = 0;
         compRecords.forEach(r => {
-            totalHakEdis += parseFloat(r.totalAmount || 0);
+            const net = parseFloat(r.totalAmount || 0);
+            totalHakEdis += net;
             totalHours += parseFloat(r.durationHours || 0);
         });
 
@@ -2106,10 +2806,11 @@
         compPayments.forEach(p => {
             let pDateObj = parseTrDate(p.date);
             let timestamp = pDateObj.getTime();
+            const isDisc = p.note && (p.note.includes('İSKONTO') || p.note.includes('İNDİRİM'));
             ledger.push({
                 dateIso: timestamp,
                 dateStr: p.date,
-                type: 'TAHSİLAT / ÖDEME',
+                type: isDisc ? 'İSKONTO MAHSUBU' : 'TAHSİLAT / ÖDEME',
                 details: p.note || 'Tahsilat Belgesi',
                 debit: 0,
                 credit: parseFloat(p.amount || 0)
@@ -2136,34 +2837,38 @@
             </div>
 
             <!-- MÜŞTERİ / FİRMA BİLGİ KARTLARI -->
-            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 5px solid #1e3a8a; border-radius: 6px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 5px solid #1e3a8a; border-radius: 6px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; gap: 15px;">
                 <div>
                     <span style="font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase;">Cari Firma / Müşteri Ünvanı</span>
                     <h2 style="font-size: 18px; color: #1e3a8a; margin: 4px 0 0 0; font-weight: 700;">${compName}</h2>
+                    ${(() => {
+                        const cObj = companiesData.find(c => (typeof c === 'object' ? c.name : c) === compName);
+                        return cObj && cObj.invoiceTitle ? `<div style="font-size: 11px; color: #334155; margin-top: 4px; line-height: 1.4;"><strong>Resmi Fatura Başlığı & Vergi Bilgileri:</strong> ${cObj.invoiceTitle.replace(/\n/g, ' - ')}</div>` : '';
+                    })()}
                 </div>
-                <div style="text-align: right;">
+                <div style="text-align: right; flex-shrink: 0;">
                     <span style="font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase;">Mutabakat Durumu</span>
                     <div style="font-size: 13px; font-weight: bold; color: ${bakiyeRenk}; margin-top: 4px;">${bakiyeMetni}</div>
                 </div>
             </div>
 
             <!-- ÖZET İSTATİSTİK KUTULARI -->
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px;">
-                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Toplam Mesai</div>
-                    <div style="font-size: 15px; font-weight: bold; color: #1e3a8a; margin-top: 4px;">${totalHours.toFixed(2)} Saat</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px;">
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 10px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Toplam Mesai Süresi</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #1e3a8a; margin-top: 4px;">${totalHours.toFixed(2)} Saat</div>
                 </div>
-                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #991b1b; font-weight: bold; text-transform: uppercase;">Toplam Hak Ediş</div>
-                    <div style="font-size: 15px; font-weight: bold; color: #991b1b; margin-top: 4px;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 10px; color: #991b1b; font-weight: bold; text-transform: uppercase;">Toplam Hak Ediş (Borç)</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #991b1b; margin-top: 4px;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Toplam Tahsilat</div>
-                    <div style="font-size: 15px; font-weight: bold; color: #166534; margin-top: 4px;">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Toplam Tahsilat / İskonto</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #166534; margin-top: 4px;">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
-                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 10px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #b45309; font-weight: bold; text-transform: uppercase;">Kalan Net Bakiye</div>
-                    <div style="font-size: 15px; font-weight: bold; color: ${bakiyeRenk}; margin-top: 4px;">${netBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 10px; color: #c2410c; font-weight: bold; text-transform: uppercase;">Kalan Net Bakiye</div>
+                    <div style="font-size: 16px; font-weight: bold; color: ${bakiyeRenk}; margin-top: 4px;">${netBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
             </div>
 
@@ -2175,7 +2880,7 @@
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
                         <tr style="background: #f1f5f9; color: #334155; text-transform: uppercase; font-size: 10px;">
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 30px;">#</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 25px;">#</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Makine / Plaka</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Operatör</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;">Başlangıç Tarih/Saat</th>
@@ -2192,6 +2897,8 @@
         } else {
             compRecords.forEach((r, idx) => {
                 const noteHtml = r.extraNote ? `<br><span style="font-size:9.5px; color:#1e3a8a;">[Not: ${r.extraNote}]</span>` : '';
+                const net = parseFloat(r.totalAmount || 0);
+
                 pdfHtml += `
                         <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
@@ -2201,7 +2908,7 @@
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center;">${r.formattedEnd}</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right;">${parseFloat(r.hourlyRate).toFixed(2)} ₺</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 600;">${r.durationHours} Saat</td>
-                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #991b1b;">${parseFloat(r.totalAmount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #991b1b;">${net.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                         </tr>`;
             });
 
@@ -2221,21 +2928,21 @@
             <!-- BÖLÜM 2: DETAYLI TAHSİLAT & ÖDEME HAREKETLERİ TABLOSU -->
             <div style="margin-bottom: 25px;">
                 <div style="background: #166534; color: #ffffff; padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 4px 4px 0 0; text-transform: uppercase;">
-                    💳 DETAYLI TAHSİLAT VE ÖDEME KAYITLARI (${compPayments.length} Adet İşlem)
+                    💳 DETAYLI TAHSİLAT VE İSKONTO KAYITLARI (${compPayments.length} Adet İşlem)
                 </div>
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
                         <tr style="background: #f1f5f9; color: #334155; text-transform: uppercase; font-size: 10px;">
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 30px;">#</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 120px;">İşlem Tarihi</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Açıklama / Dekont No / Not</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; width: 140px;">Tahsil Edilen Tutar</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Açıklama / Dekont No / İskonto Detayı</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; width: 160px;">Cariden Düşülen Tutar</th>
                         </tr>
                     </thead>
                     <tbody>`;
 
         if (compPayments.length === 0) {
-            pdfHtml += `<tr><td colspan="4" style="padding: 12px; text-align: center; border: 1px solid #cbd5e1; color: #64748b;">Firmaya ait tahsilat kaydı bulunmamaktadır.</td></tr>`;
+            pdfHtml += `<tr><td colspan="4" style="padding: 12px; text-align: center; border: 1px solid #cbd5e1; color: #64748b;">Firmaya ait tahsilat / iskonto kaydı bulunmamaktadır.</td></tr>`;
         } else {
             compPayments.forEach((p, idx) => {
                 pdfHtml += `
@@ -2249,7 +2956,7 @@
 
             pdfHtml += `
                         <tr style="background: #e2e8f0; font-weight: bold; font-size: 11px;">
-                            <td colspan="3" style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">TAHSİLAT GENEL TOPLAMI:</td>
+                            <td colspan="3" style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">TAHSİLAT / İSKONTO GENEL TOPLAMI:</td>
                             <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #166534;">+${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                         </tr>`;
         }
@@ -2268,10 +2975,10 @@
                     <thead>
                         <tr style="background: #f1f5f9; color: #334155; text-transform: uppercase; font-size: 10px;">
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 110px;">Tarih</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left; width: 120px;">İşlem Tipi</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left; width: 130px;">İşlem Tipi</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Açıklama / İş Detayı</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; width: 100px;">Borç (Hak Ediş)</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; width: 100px;">Alacak (Tahsilat)</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; width: 110px;">Alacak (Tahsilat/İsk.)</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; width: 110px;">Yürüyen Bakiye</th>
                         </tr>
                     </thead>
@@ -2392,6 +3099,8 @@
     // --- LİSTE YÖNETİMİ (FİRMA, MAKİNE, OPERATÖR) ---
     function openManager(type) {
         currentManageType = type;
+        setModalSize(type === 'operator' ? 'md' : 'lg');
+
         document.getElementById('modalTitle').innerText = 
             type === 'machine' ? 'Makine & Plaka Listesi ve Varsayılan Tanımları' :
             (type === 'operator' ? 'Personel Listesi Yönetimi' : 'Firma / Müşteri Listesi Yönetimi');
@@ -2399,15 +3108,22 @@
         let html = '';
 
         if (type === 'company') {
-            html += '<div style="margin-bottom:12px;"><button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="addCompany()">+ Yeni Firma Ekle</button></div>';
+            html += '<div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;"><button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="addCompany(true)">+ Yeni Firma Ekle</button></div>';
             html += '<ul class="manage-list">';
             savedCompanies.forEach((comp, i) => {
                 const safeComp = comp.replace(/'/g, "\\'");
-                html += `<li style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #cbd5e1;">
-                    <span style="font-weight:600; color:var(--primary);">${comp}</span>
-                    <div style="display:flex; gap:6px;">
-                        <button class="btn-primary" style="padding:4px 8px; font-size:0.8rem;" onclick="editCompany('${safeComp}')">✎ Düzenle</button>
-                        <button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteOption(${i})">Sil</button>
+                const compObj = companiesData.find(c => (typeof c === 'object' ? c.name : c) === comp);
+                const invHeader = compObj && compObj.invoiceTitle ? compObj.invoiceTitle : '';
+                html += `<li style="display:flex; justify-content:space-between; align-items:flex-start; padding:12px 14px; border-bottom:1px solid #cbd5e1; gap:12px;">
+                    <div style="flex:1;">
+                        <div style="font-weight:700; color:var(--primary); font-size:0.98rem;">${comp}</div>
+                        <div style="font-size:0.84rem; color:#64748b; margin-top:4px; line-height:1.4;">
+                            ${invHeader ? `<span style="color:#1e3a8a; font-weight:700;">📑 Resmi Fatura Başlığı:</span> <span style="color:#334155;">${invHeader}</span>` : '<span style="color:#94a3b8; font-style:italic;">(Fatura başlığı girilmemiş)</span>'}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-shrink:0;">
+                        <button class="btn-primary" style="padding:6px 10px; font-size:0.82rem; height:36px; min-height:36px;" onclick="editCompany('${safeComp}')">✎ Düzenle</button>
+                        <button class="btn-danger" style="padding:6px 10px; font-size:0.82rem; height:36px; min-height:36px;" onclick="deleteOption(${i})">Sil</button>
                     </div>
                 </li>`;
             });
@@ -2416,9 +3132,9 @@
             html += '<div style="margin-bottom:12px;"><button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="addOperator()">+ Yeni Personel Ekle</button></div>';
             html += '<ul class="manage-list">';
             savedOperators.forEach((op, i) => {
-                html += `<li style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #cbd5e1;">
-                    <span>${op}</span>
-                    <button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteOption(${i})">Sil</button>
+                html += `<li style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid #cbd5e1;">
+                    <span style="font-weight:600; font-size:0.95rem;">${op}</span>
+                    <button class="btn-danger" style="padding:6px 10px; font-size:0.82rem; height:36px; min-height:36px;" onclick="deleteOption(${i})">Sil</button>
                 </li>`;
             });
             html += '</ul>';
@@ -2428,8 +3144,8 @@
             html += '<button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="addMachine()">+ Yeni Makine Ekle</button>';
             html += '</div>';
 
-            html += '<div class="table-responsive"><table style="width:100%; border-collapse:collapse; font-size:0.88rem;">';
-            html += '<thead><tr style="background:#f1f5f9; text-align:left;"><th style="padding:6px;">Makine / Plaka Adı</th><th style="padding:6px; width:130px;">Varsayılan Saat Ücreti</th><th style="padding:6px;">Varsayılan Operatör</th><th style="padding:6px; text-align:center; width:130px;">İşlemler</th></tr></thead><tbody>';
+            html += '<div class="table-responsive" style="max-height: 480px; overflow-y:auto;"><table style="width:100%; border-collapse:collapse; font-size:0.88rem;">';
+            html += '<thead style="position:sticky; top:0; background:#f1f5f9; z-index:2;"><tr style="text-align:left;"><th style="padding:8px 10px;">Makine / Plaka Adı</th><th style="padding:8px 10px; width:180px;">Varsayılan Saat Ücreti</th><th style="padding:8px 10px; width:220px;">Varsayılan Operatör</th><th style="padding:8px 10px; text-align:center; width:140px;">İşlemler</th></tr></thead><tbody>';
 
             machinesData.forEach((mObj, i) => {
                 const mName = typeof mObj === 'object' ? mObj.name : mObj;
@@ -2439,19 +3155,19 @@
                 const opOptions = `<option value="">-- Operatör Seçilmedi --</option>` + savedOperators.map(o => `<option value="${o}" ${o === mOp ? 'selected' : ''}>${o}</option>`).join('');
 
                 html += `<tr>
-                    <td style="padding:6px; border-bottom:1px solid #cbd5e1;">
-                        <input type="text" id="mNameInput_${i}" value="${mName}" style="width:100%; padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold;">
+                    <td style="padding:8px 10px; border-bottom:1px solid #cbd5e1;">
+                        <input type="text" id="mNameInput_${i}" value="${mName}" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:4px; font-weight:bold; height:38px; min-height:38px; box-sizing:border-box;">
                     </td>
-                    <td style="padding:6px; border-bottom:1px solid #cbd5e1;">
-                        <input type="number" step="0.01" id="mRateInput_${i}" value="${mRate}" placeholder="0 ₺" style="width:100%; padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <td style="padding:8px 10px; border-bottom:1px solid #cbd5e1;">
+                        <input type="number" step="0.01" id="mRateInput_${i}" value="${mRate}" placeholder="0.00 ₺" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:4px; height:38px; min-height:38px; box-sizing:border-box;">
                     </td>
-                    <td style="padding:6px; border-bottom:1px solid #cbd5e1;">
-                        <select id="mOpInput_${i}" style="width:100%; padding:4px 6px; border:1px solid #cbd5e1; border-radius:4px;">${opOptions}</select>
+                    <td style="padding:8px 10px; border-bottom:1px solid #cbd5e1;">
+                        <select id="mOpInput_${i}" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:4px; height:38px; min-height:38px; box-sizing:border-box;">${opOptions}</select>
                     </td>
-                    <td style="padding:6px; border-bottom:1px solid #cbd5e1; text-align:center;">
-                        <div style="display:flex; gap:4px; justify-content:center;">
-                            <button class="btn-success" style="padding:4px 8px; font-size:0.78rem;" onclick="saveMachineRow(${i})">💾 Kaydet</button>
-                            <button class="btn-danger" style="padding:4px 8px; font-size:0.78rem;" onclick="deleteOption(${i})">Sil</button>
+                    <td style="padding:8px 10px; border-bottom:1px solid #cbd5e1; text-align:center;">
+                        <div style="display:flex; gap:6px; justify-content:center;">
+                            <button class="btn-success" style="padding:4px 10px; font-size:0.8rem; height:36px; min-height:36px;" onclick="saveMachineRow(${i})">💾 Kaydet</button>
+                            <button class="btn-danger" style="padding:4px 10px; font-size:0.8rem; height:36px; min-height:36px;" onclick="deleteOption(${i})">Sil</button>
                         </div>
                     </td>
                 </tr>`;
@@ -2464,18 +3180,6 @@
         document.getElementById('managerModal').style.display = 'flex';
     }
 
-    async function editCompany(oldName) {
-        const newName = prompt("Firma / Müşteri Ünvanını Düzenleyiniz:", oldName);
-        if (newName && newName.trim() && newName.trim() !== oldName) {
-            const trimmed = newName.trim();
-            if (savedCompanies.includes(trimmed)) {
-                return alert("Bu isimde başka bir firma zaten mevcut!");
-            }
-            await DataService.renameCompany(oldName, trimmed);
-            openManager('company');
-        }
-    }
-
     async function saveMachineRow(i) {
         const nameInput = document.getElementById(`mNameInput_${i}`);
         const rateInput = document.getElementById(`mRateInput_${i}`);
@@ -2486,7 +3190,7 @@
         const oldName = typeof machinesData[i] === 'object' ? machinesData[i].name : machinesData[i];
         const newName = nameInput.value.trim();
         const newRate = parseFloat(rateInput.value) || 0;
-        const newOp = opInput.value || '';
+        const newOp = opInput ? opInput.value : '';
 
         machinesData[i] = {
             name: newName,
@@ -2495,43 +3199,426 @@
         };
 
         if (oldName !== newName && oldName) {
-            await DataService.deleteOptionFromList('machine', oldName);
+            const idx = savedMachines.indexOf(oldName);
+            if (idx !== -1) savedMachines[idx] = newName;
+            records.forEach(r => {
+                if (r.machineName === oldName) r.machineName = newName;
+            });
+            localStorage.setItem('machineRecords', JSON.stringify(records));
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('machines').update({ name: newName, default_rate: newRate, default_operator: newOp }).eq('name', oldName);
+                    await supabaseClient.from('work_records').update({ machine_name: newName }).eq('machine_name', oldName);
+                } catch(e) { console.error('Supabase rename machine:', e); }
+            }
         }
 
         await DataService.saveMachines(machinesData);
         savedMachines = machinesData.map(m => typeof m === 'object' ? m.name : m);
         renderSelects();
+        renderTable();
         alert(`"${newName}" makinesinin tanımları başarıyla kaydedildi!`);
         openManager('machine');
     }
 
-    async function deleteOption(i) {
+    async function deleteOption(index) {
         if(verifyDeleteAction()) {
-            let itemToDelete = null;
-            if(currentManageType === 'machine') {
-                const item = machinesData[i];
-                itemToDelete = typeof item === 'object' ? item.name : item;
-                machinesData.splice(i, 1);
+            let itemToDelete = "";
+            if (currentManageType === 'company') {
+                itemToDelete = typeof companiesData[index] === 'object' ? companiesData[index].name : companiesData[index];
+                companiesData.splice(index, 1);
+                savedCompanies = companiesData.map(c => typeof c === 'object' ? c.name : c);
+                await DataService.saveCompanies(companiesData);
+            } else if (currentManageType === 'machine') {
+                itemToDelete = typeof machinesData[index] === 'object' ? machinesData[index].name : machinesData[index];
+                machinesData.splice(index, 1);
                 savedMachines = machinesData.map(m => typeof m === 'object' ? m.name : m);
                 await DataService.saveMachines(machinesData);
-            } else if(currentManageType === 'operator') {
-                itemToDelete = savedOperators[i];
-                savedOperators.splice(i, 1);
+            } else if (currentManageType === 'operator') {
+                itemToDelete = savedOperators[index];
+                savedOperators.splice(index, 1);
                 await DataService.saveOperators(savedOperators);
-            } else if(currentManageType === 'company') {
-                itemToDelete = savedCompanies[i];
-                savedCompanies.splice(i, 1);
-                await DataService.saveCompanies(savedCompanies);
             }
+
             if (itemToDelete) {
                 await DataService.deleteOptionFromList(currentManageType, itemToDelete);
             }
-            renderSelects(); 
+
+            renderSelects();
             openManager(currentManageType);
+            showToast("Öğe Başarıyla Silindi!", "danger");
         }
     }
 
-    function closeModal() { document.getElementById('managerModal').style.display = 'none'; }
+    function setModalSize(size = 'lg') {
+        const card = document.querySelector('#managerModal .modal-card');
+        if (!card) return;
+        card.classList.remove('modal-sm', 'modal-md', 'modal-lg');
+        if (size === 'sm') card.classList.add('modal-sm');
+        else if (size === 'md') card.classList.add('modal-md');
+        else card.classList.add('modal-lg');
+    }
+
+    function closeModal() { 
+        currentManageType = null;
+        const modal = document.getElementById('managerModal');
+        if (modal) modal.style.display = 'none'; 
+        const card = modal ? modal.querySelector('.modal-card') : null;
+        if (card) card.classList.remove('modal-sm', 'modal-md', 'modal-lg');
+    }
+
+    // --- FATURA & FATURALANDIRMA YÖNETİMİ PANELİ ---
+    let invoiceFilterType = 'all'; // 'all', 'pending', 'done'
+    let invoiceSelectedComp = '';
+
+    function openInvoiceManager(preSelectedComp = '') {
+        if (preSelectedComp) invoiceSelectedComp = preSelectedComp;
+        setModalSize('lg');
+        document.getElementById('modalTitle').innerHTML = '🧾 Fatura & Faturalandırma Yönetim Paneli';
+        renderInvoiceManagerContent();
+        document.getElementById('managerModal').style.display = 'flex';
+    }
+
+    function onInvoiceCompChange(val) {
+        invoiceSelectedComp = val;
+        renderInvoiceManagerContent();
+    }
+
+    function setInvoiceFilter(type) {
+        invoiceFilterType = type;
+        renderInvoiceManagerContent();
+    }
+
+    function copyInvoiceHeaderToClipboard(text) {
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("Resmi Fatura Başlığı Panoya Kopyalandı!");
+        }).catch(err => {
+            prompt("Fatura Başlığını Kopyalayınız:", text);
+        });
+    }
+
+    function toggleSelectAllInvoices(checked) {
+        const checkboxes = document.querySelectorAll('.invoice-item-chk');
+        checkboxes.forEach(cb => cb.checked = checked);
+    }
+
+    function renderInvoiceManagerContent() {
+        const compOpts = `<option value="">-- Tüm Firmalar --</option>` + savedCompanies.map(c => `<option value="${c}" ${c === invoiceSelectedComp ? 'selected' : ''}>${c}</option>`).join('');
+
+        const selectedCompObj = companiesData.find(c => (typeof c === 'object' ? c.name : c) === invoiceSelectedComp);
+        const invoiceTitleText = selectedCompObj && selectedCompObj.invoiceTitle ? selectedCompObj.invoiceTitle : '';
+
+        // Filter records and payments
+        let filteredRecords = records;
+        let filteredPayments = payments;
+        if (invoiceSelectedComp) {
+            filteredRecords = records.filter(r => r.companyName === invoiceSelectedComp);
+            filteredPayments = payments.filter(p => p.companyName === invoiceSelectedComp);
+        }
+
+        let totalCost = 0;
+        let totalPaid = 0;
+        let invoicedCost = 0;
+        let pendingCost = 0;
+
+        filteredRecords.forEach(r => {
+            const amt = parseFloat(r.totalAmount || 0);
+            totalCost += amt;
+            if (r.invoiceIssued || r.invoiceNo) {
+                invoicedCost += amt;
+            } else {
+                pendingCost += amt;
+            }
+        });
+
+        filteredPayments.forEach(p => {
+            totalPaid += parseFloat(p.amount || 0);
+        });
+
+        let allItems = [];
+        filteredRecords.forEach(r => {
+            allItems.push({
+                rawId: r.id,
+                kind: 'record',
+                companyName: r.companyName,
+                dateStr: r.formattedStart || r.startTimeIso,
+                details: `🚜 ${r.machineName} (${r.durationHours} Saat @ ${r.hourlyRate} ₺) ${r.extraNote ? '['+r.extraNote+']' : ''}`,
+                amount: parseFloat(r.totalAmount || 0),
+                invoiceIssued: Boolean(r.invoiceIssued || r.invoiceNo),
+                invoiceNo: r.invoiceNo || '',
+                invoiceDate: r.invoiceDate || ''
+            });
+        });
+
+        filteredPayments.forEach(p => {
+            allItems.push({
+                rawId: p.id,
+                kind: 'payment',
+                companyName: p.companyName,
+                dateStr: p.date,
+                details: `💳 ${p.note || 'Tahsilat'}`,
+                amount: parseFloat(p.amount || 0),
+                invoiceIssued: Boolean(p.invoiceIssued || p.invoiceNo),
+                invoiceNo: p.invoiceNo || '',
+                invoiceDate: p.invoiceDate || ''
+            });
+        });
+
+        const totalItemCount = allItems.length;
+
+        // Apply tab filter
+        if (invoiceFilterType === 'pending') {
+            allItems = allItems.filter(i => !i.invoiceIssued);
+        } else if (invoiceFilterType === 'done') {
+            allItems = allItems.filter(i => i.invoiceIssued);
+        }
+
+        let html = `
+            <div style="display:flex; flex-direction:column; gap: 14px;">
+                
+                <!-- FİRMA SEÇİMİ VE RESMİ FATURA BAŞLIĞI KARTI -->
+                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 5px solid #1e3a8a; border-radius: 6px; padding: 12px 16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:240px;">
+                            <label style="font-weight:700; color:#1e3a8a; font-size:0.9rem; white-space:nowrap;">Firma Filtresi:</label>
+                            <select id="invoiceCompSelect" onchange="onInvoiceCompChange(this.value)" style="flex:1; max-width:320px; font-weight:600;">
+                                ${compOpts}
+                            </select>
+                        </div>
+                        ${invoiceSelectedComp ? `
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;" onclick="editCompany('${invoiceSelectedComp.replace(/'/g, "\\'")}')">✏️ Fatura Başlığını Düzenle</button>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    ${invoiceSelectedComp ? `
+                    <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:250px;">
+                            <span style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">🏢 Resmi Fatura Başlığı & Vergi Bilgileri:</span>
+                            <div style="font-size:0.92rem; font-weight:600; color:#0f172a; margin-top:2px; white-space:pre-line;">${invoiceTitleText || '<span style="color:#94a3b8; font-weight:normal; font-style:italic;">Bu firmaya ait henüz resmi fatura başlığı girilmemiş. "Düzenle" butonundan ekleyebilirsiniz.</span>'}</div>
+                        </div>
+                        ${invoiceTitleText ? `
+                        <button type="button" class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="copyInvoiceHeaderToClipboard('${invoiceTitleText.replace(/\n/g, ' ').replace(/'/g, "\\'")}')">📋 Başlığı Kopyala</button>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+
+                <!-- KPI ÖZET KARTLARI -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:10px; border-radius:6px; text-align:center;">
+                        <div style="font-size:0.75rem; color:#1e40af; font-weight:700; text-transform:uppercase;">Toplam Hak Ediş</div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#1e3a8a; margin-top:2px;">${totalCost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                    </div>
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; text-align:center;">
+                        <div style="font-size:0.75rem; color:#166534; font-weight:700; text-transform:uppercase;">Faturası Kesilen</div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#166534; margin-top:2px;">${invoicedCost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                    </div>
+                    <div style="background:#fffbeb; border:1px solid #fde68a; padding:10px; border-radius:6px; text-align:center;">
+                        <div style="font-size:0.75rem; color:#92400e; font-weight:700; text-transform:uppercase;">Fatura Bekleyen</div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#b45309; margin-top:2px;">${pendingCost.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                    </div>
+                    <div style="background:#faf5ff; border:1px solid #e9d5ff; padding:10px; border-radius:6px; text-align:center;">
+                        <div style="font-size:0.75rem; color:#6b21a8; font-weight:700; text-transform:uppercase;">Toplam Tahsilat</div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#6b21a8; margin-top:2px;">${totalPaid.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                    </div>
+                </div>
+
+                <!-- FİLTRE VE TOPLU FATURALANDIRMA ARAÇ ÇUBUĞU -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:#f1f5f9; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1;">
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="tab-btn ${invoiceFilterType==='all'?'active':''}" style="padding:6px 12px; font-size:0.82rem; border-radius:4px;" onclick="setInvoiceFilter('all')">Tümü (${totalItemCount})</button>
+                        <button type="button" class="tab-btn ${invoiceFilterType==='pending'?'active':''}" style="padding:6px 12px; font-size:0.82rem; border-radius:4px;" onclick="setInvoiceFilter('pending')">⏳ Fatura Bekleyenler</button>
+                        <button type="button" class="tab-btn ${invoiceFilterType==='done'?'active':''}" style="padding:6px 12px; font-size:0.82rem; border-radius:4px;" onclick="setInvoiceFilter('done')">🟢 Faturası Kesilenler</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button type="button" class="btn-primary" style="padding:6px 12px; font-size:0.82rem;" onclick="batchApplyInvoice()">⚡ Seçilenlere Toplu Fatura No Tanımla</button>
+                    </div>
+                </div>
+
+                <!-- LİSTE TABLOSU -->
+                <div class="table-responsive" style="max-height: 380px; overflow-y:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.86rem;">
+                        <thead style="position:sticky; top:0; background:#1e3a8a; color:white; z-index:2;">
+                            <tr>
+                                <th style="width:36px; text-align:center; padding:8px 6px;"><input type="checkbox" id="selectAllInvoices" onchange="toggleSelectAllInvoices(this.checked)"></th>
+                                <th style="width:90px; padding:8px 6px; white-space:nowrap;">İşlem Türü</th>
+                                <th style="width:150px; padding:8px 6px;">Firma</th>
+                                <th style="width:105px; padding:8px 6px; white-space:nowrap;">Tarih</th>
+                                <th style="padding:8px 6px;">Açıklama / Detay</th>
+                                <th style="width:115px; padding:8px 6px; text-align:right; white-space:nowrap;">Tutar (TL)</th>
+                                <th style="width:145px; padding:8px 6px; text-align:center; white-space:nowrap;">Fatura Durumu</th>
+                                <th style="width:110px; padding:8px 6px; text-align:center; white-space:nowrap;">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+
+        if (allItems.length === 0) {
+            html += `<tr><td colspan="8" style="text-align:center; padding:20px; color:#64748b;">Bu kritere uygun kayıt bulunamadı.</td></tr>`;
+        } else {
+            allItems.forEach((item, idx) => {
+                const isChecked = item.invoiceIssued;
+                const statusBadge = isChecked 
+                    ? `<span class="badge-invoice-done">🟢 ${item.invoiceNo || 'Fatura Kesildi'}${item.invoiceDate ? ' ('+item.invoiceDate+')' : ''}</span>`
+                    : `<span class="badge-invoice-pending">⏳ Fatura Kesilmedi</span>`;
+
+                html += `
+                    <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
+                        <td style="text-align:center; padding:6px;"><input type="checkbox" class="invoice-item-chk" data-kind="${item.kind}" data-id="${item.rawId}" data-amount="${item.amount}"></td>
+                        <td style="padding:6px; font-weight:600; white-space:nowrap; color:${item.kind==='record'?'#1e3a8a':'#166534'};">${item.kind==='record'?'🚜 Mesai':'💳 Tahsilat'}</td>
+                        <td style="padding:6px; font-weight:600; word-break:break-word;">${item.companyName}</td>
+                        <td style="padding:6px; white-space:nowrap;">${item.dateStr}</td>
+                        <td style="padding:6px; word-break:break-word;">${item.details}</td>
+                        <td style="padding:6px; text-align:right; font-weight:bold; white-space:nowrap; color:${item.kind==='record'?'#991b1b':'#166534'};">${item.amount.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                        <td style="padding:6px; text-align:center; white-space:nowrap;">${statusBadge}</td>
+                        <td style="padding:6px; text-align:center; white-space:nowrap;">
+                            <div style="display:flex; gap:4px; justify-content:center;">
+                                <button type="button" class="btn-primary" style="padding:3px 7px; font-size:0.75rem; height:30px; min-height:30px;" onclick="setSingleInvoice('${item.kind}', ${item.rawId})">✏️ Fatura No</button>
+                                ${item.invoiceIssued ? `<button type="button" class="btn-danger" style="padding:3px 7px; font-size:0.75rem; height:30px; min-height:30px;" onclick="clearSingleInvoice('${item.kind}', ${item.rawId})">✕</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; margin-top:5px;">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Kapat</button>
+                </div>
+
+            </div>
+        `;
+
+        document.getElementById('modalContent').innerHTML = html;
+    }
+
+    async function setSingleInvoice(kind, id) {
+        let currentInvNo = '';
+        let currentInvDate = new Date().toISOString().slice(0, 10);
+
+        if (kind === 'record') {
+            const rec = records.find(r => Number(r.id) === Number(id));
+            if (rec) {
+                currentInvNo = rec.invoiceNo || '';
+                if (rec.invoiceDate) currentInvDate = rec.invoiceDate;
+            }
+        } else {
+            const pay = payments.find(p => Number(p.id) === Number(id));
+            if (pay) {
+                currentInvNo = pay.invoiceNo || '';
+                if (pay.invoiceDate) currentInvDate = pay.invoiceDate;
+            }
+        }
+
+        const invNo = prompt("e-Fatura / e-Arşiv Fatura Numarasını Giriniz (Örn: GIB2026000001234):", currentInvNo);
+        if (invNo === null) return;
+        const trimmedNo = invNo.trim();
+
+        const invDate = prompt("Fatura Tarihini Giriniz (YYYY-AA-GG):", currentInvDate);
+        if (invDate === null) return;
+        const trimmedDate = invDate.trim();
+
+        if (kind === 'record') {
+            const rec = records.find(r => Number(r.id) === Number(id));
+            if (rec) {
+                rec.invoiceNo = trimmedNo;
+                rec.invoiceDate = trimmedDate;
+                rec.invoiceIssued = Boolean(trimmedNo);
+                await DataService.updateRecord(rec);
+            }
+        } else {
+            const pay = payments.find(p => Number(p.id) === Number(id));
+            if (pay) {
+                pay.invoiceNo = trimmedNo;
+                pay.invoiceDate = trimmedDate;
+                pay.invoiceIssued = Boolean(trimmedNo);
+                await DataService.updatePayment(pay);
+            }
+        }
+
+        renderTable();
+        renderInvoiceManagerContent();
+        showToast("Fatura Bilgisi Başarıyla Güncellendi!");
+    }
+
+    async function clearSingleInvoice(kind, id) {
+        if (!confirm("Bu kaydın fatura bilgisini kaldırmak (fatura kesilmedi durumuna getirmek) istediğinize emin misiniz?")) return;
+
+        if (kind === 'record') {
+            const rec = records.find(r => Number(r.id) === Number(id));
+            if (rec) {
+                rec.invoiceNo = '';
+                rec.invoiceDate = '';
+                rec.invoiceIssued = false;
+                await DataService.updateRecord(rec);
+            }
+        } else {
+            const pay = payments.find(p => Number(p.id) === Number(id));
+            if (pay) {
+                pay.invoiceNo = '';
+                pay.invoiceDate = '';
+                pay.invoiceIssued = false;
+                await DataService.updatePayment(pay);
+            }
+        }
+
+        renderTable();
+        renderInvoiceManagerContent();
+        showToast("Fatura Bilgisi Kaldırıldı!");
+    }
+
+    async function batchApplyInvoice() {
+        const checkedBoxes = Array.from(document.querySelectorAll('.invoice-item-chk:checked'));
+        if (checkedBoxes.length === 0) {
+            return alert("Lütfen fatura numarası tanımlamak istediğiniz en az bir işlem kaydı seçiniz!");
+        }
+
+        let sumAmount = 0;
+        checkedBoxes.forEach(cb => sumAmount += parseFloat(cb.dataset.amount || 0));
+
+        const invNo = prompt(`${checkedBoxes.length} Adet İşlem (Toplam: ${sumAmount.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺) seçildi.\n\nTanımlanacak Fatura Numarasını Giriniz (Örn: GIB2026000001234):`);
+        if (invNo === null || !invNo.trim()) return;
+        const trimmedNo = invNo.trim();
+
+        const invDate = prompt("Fatura Tarihini Giriniz (YYYY-AA-GG):", new Date().toISOString().slice(0, 10));
+        if (invDate === null) return;
+        const trimmedDate = invDate.trim();
+
+        for (const cb of checkedBoxes) {
+            const kind = cb.dataset.kind;
+            const id = Number(cb.dataset.id);
+
+            if (kind === 'record') {
+                const rec = records.find(r => Number(r.id) === Number(id));
+                if (rec) {
+                    rec.invoiceNo = trimmedNo;
+                    rec.invoiceDate = trimmedDate;
+                    rec.invoiceIssued = true;
+                    await DataService.updateRecord(rec);
+                }
+            } else if (kind === 'payment') {
+                const pay = payments.find(p => Number(p.id) === Number(id));
+                if (pay) {
+                    pay.invoiceNo = trimmedNo;
+                    pay.invoiceDate = trimmedDate;
+                    pay.invoiceIssued = true;
+                    await DataService.updatePayment(pay);
+                }
+            }
+        }
+
+        renderTable();
+        renderInvoiceManagerContent();
+        showToast(`${checkedBoxes.length} Adet Kayda Fatura No ("${trimmedNo}") Başarıyla Tanımlandı!`);
+    }
 
     /* --- TASARIMLI VE ŞIK HTML-EXCEL ŞABLON AKTARIM FONKSİYONU --- */
     function exportToExcelDetailed() {
@@ -2547,10 +3634,12 @@
         let totalHakEdis = 0, totalTahsilat = 0, totalHours = 0;
         
         records.forEach(r => {
+            const net = parseFloat(r.totalAmount || 0);
+
             if (!compData[r.companyName]) compData[r.companyName] = { hours: 0, cost: 0, paid: 0 };
             compData[r.companyName].hours += parseFloat(r.durationHours || 0);
-            compData[r.companyName].cost += parseFloat(r.totalAmount || 0);
-            totalHakEdis += parseFloat(r.totalAmount || 0);
+            compData[r.companyName].cost += net;
+            totalHakEdis += net;
             totalHours += parseFloat(r.durationHours || 0);
         });
 
@@ -2607,7 +3696,7 @@
                         <th>Firma / Müşteri Ünvanı</th>
                         <th>Toplam Çalışma (Saat)</th>
                         <th>Toplam Hak Ediş (TL)</th>
-                        <th>Toplam Tahsilat (TL)</th>
+                        <th>Toplam Tahsilat / İskonto (TL)</th>
                         <th>Kalan Bakiye (TL)</th>
                         <th>Güncel Cari Durum</th>
                     </tr>
@@ -2663,9 +3752,11 @@
         let workSumHours = 0, workSumCost = 0;
         records.forEach((r, idx) => {
             const h = parseFloat(r.durationHours || 0);
-            const c = parseFloat(r.totalAmount || 0);
+            const rate = parseFloat(r.hourlyRate || 0);
+            const net = parseFloat(r.totalAmount || 0);
+
             workSumHours += h;
-            workSumCost += c;
+            workSumCost += net;
             const noteText = r.extraNote ? `<span class="note-tag">📝 ${r.extraNote}</span>` : '-';
 
             html += `<tr>
@@ -2673,11 +3764,11 @@
                 <td><strong>${r.companyName}</strong></td>
                 <td>${r.machineName}</td>
                 <td>${r.operator}</td>
-                <td>${r.hourlyRate} ₺</td>
+                <td>${rate.toFixed(2)} ₺</td>
                 <td>${r.formattedStart}</td>
                 <td>${r.formattedEnd}</td>
                 <td>${h.toFixed(2)} Saat</td>
-                <td><strong>${c.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong></td>
+                <td><strong>${net.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</strong></td>
                 <td>${noteText}</td>
             </tr>`;
         });
@@ -2697,15 +3788,15 @@
         </table>
 
         <!-- TABLO 3: TAHSİLAT HAREKETLERİ -->
-        <div class="section-header">💳 DETAYLI TAHSİLAT VE ÖDEME HAREKETLERİ</div>
+        <div class="section-header">💳 DETAYLI TAHSİLAT VE İSKONTO HAREKETLERİ</div>
         <table>
             <thead>
                 <tr>
                     <th>Sıra No</th>
                     <th>Firma Ünvanı</th>
-                    <th>Tahsilat Tarihi</th>
-                    <th>Alınan Tutar (TL)</th>
-                    <th>Açıklama / Dekont / Not</th>
+                    <th>İşlem Tarihi</th>
+                    <th>Cariden Düşülen Tutar (TL)</th>
+                    <th>Açıklama / Dekont / İskonto Detayı</th>
                 </tr>
             </thead>
             <tbody>`;
@@ -2728,7 +3819,7 @@
             html += `<tr><td colspan="5" style="text-align:center;">Sistemde kayıtlı tahsilat verisi bulunmamaktadır.</td></tr>`;
         } else {
             html += `<tr class="total-row">
-                <td colspan="3">TOPLAM TAHSİLAT HAREKETLERİ</td>
+                <td colspan="3">TOPLAM TAHSİLAT / İSKONTO</td>
                 <td class="val-credit">+${paySum.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                 <td>-</td>
             </tr>`;
@@ -2792,10 +3883,12 @@
         let totalHakEdis = 0, totalTahsilat = 0, totalHours = 0;
         
         records.forEach(r => {
+            const net = parseFloat(r.totalAmount || 0);
+
             if (!compData[r.companyName]) compData[r.companyName] = { hours: 0, cost: 0, paid: 0 };
             compData[r.companyName].hours += parseFloat(r.durationHours || 0);
-            compData[r.companyName].cost += parseFloat(r.totalAmount || 0);
-            totalHakEdis += parseFloat(r.totalAmount || 0);
+            compData[r.companyName].cost += net;
+            totalHakEdis += net;
             totalHours += parseFloat(r.durationHours || 0);
         });
 
@@ -2829,22 +3922,22 @@
             </div>
 
             <!-- ÖZET İSTATİSTİK KUTULARI -->
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px;">
-                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px; border-radius: 6px; text-align: center;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px;">
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 6px; text-align: center;">
                     <div style="font-size: 10px; color: #1e40af; font-weight: bold; text-transform: uppercase;">Toplam Mesai</div>
-                    <div style="font-size: 15px; font-weight: bold; color: #1e3a8a; margin-top: 4px;">${totalHours.toFixed(2)} Saat</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #1e3a8a; margin-top: 4px;">${totalHours.toFixed(2)} Saat</div>
                 </div>
-                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 6px; text-align: center;">
+                <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 6px; text-align: center;">
                     <div style="font-size: 10px; color: #991b1b; font-weight: bold; text-transform: uppercase;">Toplam Hak Ediş</div>
-                    <div style="font-size: 15px; font-weight: bold; color: #991b1b; margin-top: 4px;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #991b1b; margin-top: 4px;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Toplam Tahsilat</div>
-                    <div style="font-size: 15px; font-weight: bold; color: #166534; margin-top: 4px;">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase;">Toplam Tahsilat / İskonto</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #166534; margin-top: 4px;">${totalTahsilat.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
-                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 10px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 10px; color: #b45309; font-weight: bold; text-transform: uppercase;">Genel Net Bakiye</div>
-                    <div style="font-size: 15px; font-weight: bold; color: ${genBakiye > 0 ? '#991b1b' : '#166534'}; margin-top: 4px;">${genBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; padding: 12px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 10px; color: #c2410c; font-weight: bold; text-transform: uppercase;">Genel Net Bakiye</div>
+                    <div style="font-size: 16px; font-weight: bold; color: ${genBakiye > 0 ? '#991b1b' : '#166534'}; margin-top: 4px;">${genBakiye.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</div>
                 </div>
             </div>
 
@@ -2859,7 +3952,7 @@
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Firma / Müşteri Ünvanı</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Çalışma (Saat)</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Hak Ediş (TL)</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Tahsilat (TL)</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Tahsilat / İsk. (TL)</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Bakiye (TL)</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;">Cari Durum</th>
                         </tr>
@@ -2903,23 +3996,26 @@
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
                         <tr style="background: #f1f5f9; color: #334155; text-transform: uppercase; font-size: 10px;">
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 30px;">#</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 25px;">#</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Firma Ünvanı</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Makine / Plaka</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Operatör</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;">Başlangıç</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;">Bitiş</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Saat Ücreti</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Süre</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Tutar</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Hak Ediş Tutarı</th>
                         </tr>
                     </thead>
                     <tbody>`;
 
         if (records.length === 0) {
-            pdfHtml += `<tr><td colspan="8" style="padding: 12px; text-align: center; border: 1px solid #cbd5e1; color: #64748b;">Mesai kaydı bulunmamaktadır.</td></tr>`;
+            pdfHtml += `<tr><td colspan="9" style="padding: 12px; text-align: center; border: 1px solid #cbd5e1; color: #64748b;">Mesai kaydı bulunmamaktadır.</td></tr>`;
         } else {
             records.forEach((r, idx) => {
                 const noteHtml = r.extraNote ? `<br><span style="font-size:9.5px; color:#1e3a8a;">[Not: ${r.extraNote}]</span>` : '';
+                const net = parseFloat(r.totalAmount || 0);
+
                 pdfHtml += `
                         <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
@@ -2928,10 +4024,18 @@
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1;">${r.operator}</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center;">${r.formattedStart}</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: center;">${r.formattedEnd}</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right;">${parseFloat(r.hourlyRate).toFixed(2)} ₺</td>
                             <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right;">${r.durationHours} Saat</td>
-                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #991b1b;">${parseFloat(r.totalAmount).toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                            <td style="padding: 7px 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #991b1b;">${net.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
                         </tr>`;
             });
+
+            pdfHtml += `
+                        <tr style="background: #e2e8f0; font-weight: bold; font-size: 11px;">
+                            <td colspan="7" style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">MESAİ GENEL TOPLAMI:</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #1e3a8a;">${totalHours.toFixed(2)} Saat</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; color: #991b1b;">${totalHakEdis.toLocaleString('tr-TR', {minimumFractionDigits:2})} ₺</td>
+                        </tr>`;
         }
 
         pdfHtml += `
@@ -2942,7 +4046,7 @@
             <!-- TABLO 3: DETAYLI TAHSİLAT HAREKETLERİ -->
             <div style="margin-bottom: 25px;">
                 <div style="background: #166534; color: #ffffff; padding: 8px 12px; font-size: 12px; font-weight: bold; border-radius: 4px 4px 0 0; text-transform: uppercase;">
-                    💳 SİSTEMDEKİ TÜM TAHSİLAT HAREKETLERİ (${payments.length} Adet)
+                    💳 SİSTEMDEKİ TÜM TAHSİLAT VE İSKONTO HAREKETLERİ (${payments.length} Adet)
                 </div>
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                     <thead>
@@ -2950,8 +4054,8 @@
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 30px;">#</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Firma Ünvanı</th>
                             <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; width: 120px;">Tarih</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Açıklama / Dekont</th>
-                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; width: 140px;">Tutar</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: left;">Açıklama / Dekont / İskonto Detayı</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; width: 140px;">Cariden Düşülen</th>
                         </tr>
                     </thead>
                     <tbody>`;
